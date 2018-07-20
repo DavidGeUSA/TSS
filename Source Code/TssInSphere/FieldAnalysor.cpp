@@ -1,0 +1,137 @@
+/*******************************************************************
+	Author: Bob Limnor (bob@limnor.com, aka Wei Ge)
+	Last modified: 03/31/2018
+	Allrights reserved by Bob Limnor
+
+********************************************************************/
+
+#include "FieldAnalysor.h"
+
+#include <malloc.h>
+#include <math.h>
+#define _USE_MATH_DEFINES // for C++  
+#include <cmath>  
+
+FieldAnalysor::FieldAnalysor(RadiusIndexToSeriesIndex* indexCache)
+{
+	ret = ERR_OK;
+	//physics constants ==============
+	c0 = 299792458; //speed of light
+	mu0 = 4.0 * M_PI * 1.0e-7;
+	eps0 = 1.0 /(mu0 * c0 * c0);
+	//=================================
+	seriesIndex = indexCache;
+	_fields = NULL;
+	_divergenceEstimator = NULL;
+	_derivativeAsymmetric = NULL;
+	index = 0;
+}
+FieldAnalysor::~FieldAnalysor(void)
+{
+	cleanup();
+}
+void FieldAnalysor::cleanup()
+{
+	if(_divergenceEstimator != NULL)
+	{
+		delete _divergenceEstimator;
+		_divergenceEstimator = NULL;
+	}
+	if(_derivativeAsymmetric != NULL)
+	{
+		delete _derivativeAsymmetric;
+		_derivativeAsymmetric = NULL;
+	}
+	_fields = NULL;
+}
+int FieldAnalysor::setFields(FieldPoint3D *fields, int maxR, double spaceStep, int halfOrder)
+{
+	cleanup();
+	_fields = fields;
+	maxRadius = maxR;
+	ds = spaceStep;
+	_halfOrder = halfOrder;
+	_derivativeAsymmetric = new DerivativeEstimatorAsymmetric(_halfOrder, maxRadius, seriesIndex);
+	_divergenceEstimator = new FieldStatisticsByDivergenceAsymmetric(_derivativeAsymmetric, _fields, ds);
+	_derivativeAsymmetric->prepareCoefficeints();
+	ret = _derivativeAsymmetric->GetLastHandlerError();
+	if(ret == ERR_OK)
+	{
+		ret = _divergenceEstimator->AllocateList(maxRadius);
+	}
+	return ret;
+}
+int FieldAnalysor::execute()
+{
+	ret = RADIUSINDEXMAPEXIST;
+	if(ret == ERR_OK)
+	{
+		_divergenceEstimator->SetField(_fields);
+		ret =_divergenceEstimator->gothroughSphere(maxRadius);
+		if(ret == ERR_OK)
+		{
+			dataByRadius = _divergenceEstimator->GetList();
+			if(dataByRadius != NULL)
+			{
+				index = 0;
+				ret = this->gothroughSphere(maxRadius, ds);
+			}
+		}
+	}
+	return ret;
+}
+void FieldAnalysor::handleData(double x, double y, double z)
+{
+	se =
+		(eps0 * (_fields[index].E.x * _fields[index].E.x + _fields[index].E.y * _fields[index].E.y + _fields[index].E.z * _fields[index].E.z)
+		+ mu0 * (_fields[index].H.x * _fields[index].H.x + _fields[index].H.y * _fields[index].H.y + _fields[index].H.z * _fields[index].H.z))/2.0;
+	dataByRadius[r].sumEnergy += se;
+	//
+	sx = _fields[index].E.y * _fields[index].H.z - _fields[index].H.y * _fields[index].E.z;
+	sy = _fields[index].E.z * _fields[index].H.x - _fields[index].H.z * _fields[index].E.x;
+	sz = _fields[index].E.x * _fields[index].H.y - _fields[index].H.x * _fields[index].E.y;
+	//
+	sm = sqrt(sx * sx + sy * sy + sz * sz);
+	sa = x * sx + y * sy + z * sz;
+	//
+	if(se > 1.0)
+		se = 1.0e-8;
+	else
+		se = 1.0e-8 * se;
+	//
+	if(sa > se)
+	{
+		dataByRadius[r].sumEnergyOutwards += sm;
+	}
+	else if(sa < -se)
+	{
+		dataByRadius[r].sumEnergyInwards += sm;
+	}
+	else
+	{
+		dataByRadius[r].sumEnergyCircular += sm;
+	}
+	//
+	index++;
+}
+void FieldAnalysor::ShowDetails(fnProgressReport reporter)
+{
+	_divergenceEstimator->ShowDetails(reporter);
+}
+void FieldAnalysor::ShowReport(fnProgressReport reporter)
+{
+	_divergenceEstimator->ShowReport(reporter);
+}
+int FieldAnalysor::WriteDivegenceToFile(int filehandle)
+{
+	return _divergenceEstimator->WriteDivegenceToFile(filehandle);
+}
+double FieldAnalysor::getAverageDivergenceE()
+{
+	return _divergenceEstimator->GetAverageDivergenceE();
+}
+double FieldAnalysor::getAverageDivergenceH()
+{
+	return _divergenceEstimator->GetAverageDivergenceH();
+}
+//
