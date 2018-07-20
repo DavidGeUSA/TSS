@@ -1,3 +1,20 @@
+# Open Source EM Field FDTD Software
+The purpose of this software is for doing digital experiments on electromagnetic fields, such as simulations, statistics, FFT, 3D/2D drawings, etc.  It is not intended to be a software product; rather, it uses open source to provide a framework and tools for you to experiment your own ideas and coding.
+
+For simulating EM fields, a simple plugin system is used to dynamically load following modules: FDTD algorithms, boundary conditions, initial field values, field sources, and total field/scattered field boundary.
+
+By using this plugin system, you can experiment on different ideas and coding of these elements in a field simulation.
+For the simulation system, each plugin module is represented by an abstract C++ class. You try your ideas and coding by deriving new classes from these abstract classes.
+
+Sample plugin modules are part of this open source project. 
+Following FDTD algorithms are implemented as FDTD algorithm plugin modules:
+1. Standard Yee FDTD algorithm
+2. Space synchronized Yee FDTD algorithm
+3. Time-Space-Synchronized FDTD algorithm for homogeneous space
+4. Tine-Space-Synchronized FDTD algorithm for inhomogeneous environments
+
+You can review source code of these sample plugin modules to see how you can develop your own plugin modules. 
+
 # Time-Space-Synchronized FDTD Simulation
 I am a retired software engineer. I like to play with computer coding. Among the coding I played is Schneider’s teaching book “Understanding the FDTD Method” (https://github.com/john-b-schneider/uFDTD).
 
