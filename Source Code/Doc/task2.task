@@ -1,0 +1,21 @@
+//this task file is for executing task 2
+//this task verifies that class RadiusIndexToSeriesIndex works correctly; it requires a command line parameter "/W"; it requires a task parameter "FDTD.N"
+//
+//a space point (x,y,z) is represented by 3 integers m,n, and p, x=m*ds, y=n*ds, z=p*ds
+//m,n,p=0,+-1,+-2,...,+-maxRadius
+//r=max(|m|,|n|,|p|) is called a radius
+//
+//EM field at 3D space points are saved in a 1D memory, block by block; 
+//each block consists of space points on the same radius; smaller radiuses go first. 
+//
+//class RadiusIndexToSeriesIndex keeps a 3D array of integers forming a mapping of (m,n,p) to integer;
+//the integer is the index into the whole 1D memory. 
+//It provides an efficient way of accessing field memory given (m,n,p)
+//
+//this task is kind of a unit test for class RadiusIndexToSeriesIndex
+
+//task number
+SIM.TASK=2
+
+//half number of grids, maxRadius=2N+1
+FDTD.N=100

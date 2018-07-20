@@ -1,0 +1,17 @@
+//this task file is for executing task 120
+//this task creates a report file for each data file. It requires command line parameters "/W" and "/D". 
+//It requires a task parameter "SIM.BASENAME" for specifying base file name, which does not include file name extension. 
+//It requires a task parameter "FDTD.R" which must match the value used to generate the data files.
+//It searches data files by {path by /D}\{base file name}{n}.em, where {n}=0,1,2,...
+//It uses an optional task parameter, "FDTD.HALF_ORDER_SPACE", to specify half estimation order for divergence estimations. Default value is 1.
+
+//task number
+SIM.TASK=120
+
+//base file name
+SIM.BASENAME=YeeFDTDSpaceSynched_N64_R0R2_T2S2_
+
+//half space range; it must match the data files
+FDTD.R=0.2
+
+

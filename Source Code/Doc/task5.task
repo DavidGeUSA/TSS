@@ -1,0 +1,30 @@
+//this task file is for executing task 5
+//this task verifies an Initial Value module by divergences. It requires command line parameters "/W" and "/L". It requires following task parameters: "FDTD.N", "FDTD.R", "SIM.IV_DLL", "SIM.IV_NAME" and "FDTD.HALF_ORDER_SPACE"
+//
+
+//task number
+SIM.TASK=5
+
+//half number of grids
+FDTD.N=50
+
+//half space range
+FDTD.R=50
+
+//DLL file containing Initial Value modules, use command line parameter /W to specify folder for this file
+SIM.IV_DLL=FieldProviders.dll
+
+//class name of the Initial Value module to be used
+SIM.IV_NAME=GaussianFields
+
+//following task parameters are defined and used by class GaussianFields
+
+//magnitude of field
+IV.MAGNITUDE=120
+
+//gaussian function width
+IV.WIDTH=0.5
+
+//half estimation order for space derivative estimation
+//1 means using 2nd order estimation for doing divergence estimation; 2 means 4-th order, and so on
+FDTD.HALF_ORDER_SPACE=5

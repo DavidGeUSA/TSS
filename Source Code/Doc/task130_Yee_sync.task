@@ -1,0 +1,22 @@
+//this task file is for executing task 130
+//this task picks field points with the largest strengths from each data file and generate a new data file.
+// the new file contains items of 9 doubles: 3 for space location, 6 for EM field.
+// It requires command line parameters "/W" and "/D".
+// It requires following task parameters: "FDTD.R", "SIM.BASENAME",
+//   "SIM.POINTS" for the number of field points to pick,
+//   and "SIM.MAXTIMES" for maximum number of data files to process, use 0 to process all data files.
+
+//task number
+SIM.TASK=130
+
+//half space range; it must match the data files
+FDTD.R=0.2
+
+//base file name
+SIM.BASENAME=YeeFDTDSpaceSynched_N64_R0R2_T2S2_
+
+//number of field points to pick
+SIM.POINTS=500
+
+//maximum number of data files to process, use 0 to process all data files
+SIM.MAXTIMES=0

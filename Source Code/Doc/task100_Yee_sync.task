@@ -1,0 +1,60 @@
+//this task file is for executing task 100
+//this task executes an EM field simulation. 
+//It requires command line parameters "/W" and "/D". 
+//It requires following task parameters: "FDTD.N", "FDTD.R" , "SIM.FDTD_DLL", "SIM.FDTD_NAME", "SIM.BC_DLL", "SIM.BC_NAME", "SIM.IV_DLL" and "SIM.IV_NAME". 
+//Following task parameters are optional: "SIM.TFSF_DLL", "SIM.TFSF_NAME", "SIM.FS_DLL", and "SIM.FS_NAME". 
+//It also requires a task parameter "SIM.BASENAME" for specifying base file name, which does not include file name extension. 
+//Suppose "SIM.BASENAME" is specified as 
+//SIM.BASENAME=simA 
+//and command line uses "/Dc:\simulation\data" then for each simulation time step,
+// the electromagnetic field is saved in a file "c:\simulation\data\simA{n}.em", where {n} is time step index which can be 0, 1, 2, ...;
+//"DEF" for "SIM.BASENAME" means to use a base name generated using values of other task parameters.
+//That is, if "SIM.BASENAME" is specified as
+//SIM.BASENAME=DEF
+//then a base file name is generated using values of FDTD.N, FDTD.R and other task parameter values. 
+
+//it uses 6 space-shifted YeeFDTD simulations to get a set of space-synchronized EM field
+
+//task number
+SIM.TASK=100
+
+//the number of double intervals at one side of axis
+// number of space points=(4N+3)^3=17373979
+// memory size=833950992 bytes=0.8G
+FDTD.N=64
+
+//half space range
+FDTD.R=0.2
+
+//use default base file name
+SIM.BASENAME=DEF
+
+//maximum time steps
+FDTD.MAXTIMESTEP=20
+
+//DLL file for FDTD module
+SIM.FDTD_DLL=YeeFDTD.DLL
+
+//class name for FDTD module
+SIM.FDTD_NAME=YeeFDTDSpaceSynched
+
+//DLL file for boundary condition module
+SIM.BC_DLL=BoundaryConditionA.dll
+
+//class name for boundary condition module
+SIM.BC_NAME=VoidCondition
+
+//DLL file containing Initial Value modules
+SIM.IV_DLL=FieldProviders.dll
+
+//class name of the Initial Value module to be used
+SIM.IV_NAME=GaussianFields
+
+//following task parameters are defined and used by class GaussianFields
+
+//magnitude of field
+IV.MAGNITUDE=120
+
+//gaussian function width
+IV.WIDTH=0.5
+

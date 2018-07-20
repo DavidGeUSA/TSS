@@ -1,0 +1,27 @@
+//this task file is for executing task 4
+//this task verifies that the abstract class FDTD uses a field Initial Value module correctly. It requires command line parameters "/W" and "/L". It requires following task parameters: "FDTD.N", "FDTD.R", "SIM.IV_DLL" and "SIM.IV_NAME"
+//
+
+//task number
+SIM.TASK=4
+
+//half number of grids
+FDTD.N=20
+
+//half space range
+FDTD.R=50
+
+//DLL file containing Initial Value modules, use command line parameter /W to specify folder for this file
+SIM.IV_DLL=FieldProviders.dll
+
+//class name of the Initial Value module to be used
+SIM.IV_NAME=GaussianFields
+
+//following task parameters are defined and used by class GaussianFields
+
+//magnitude of field
+IV.MAGNITUDE=120
+
+//gaussian function width
+IV.WIDTH=0.5
+

@@ -1,0 +1,65 @@
+//this task file is for executing task 100
+//this task executes an EM field simulation. 
+//It requires command line parameters "/W", "/L" and "/D". 
+//It requires following task parameters: "FDTD.N", "FDTD.R" , "SIM.FDTD_DLL", "SIM.FDTD_NAME", "SIM.BC_DLL", "SIM.BC_NAME", "SIM.IV_DLL" and "SIM.IV_NAME". 
+//Following task parameters are optional: "SIM.TFSF_DLL", "SIM.TFSF_NAME", "SIM.FS_DLL", and "SIM.FS_NAME". 
+//It also requires a task parameter "SIM.BASENAME" for specifying base file name, which does not include file name extension. 
+//Suppose "SIM.BASENAME" is specified as 
+//SIM.BASENAME=simA 
+//and command line uses "/Dc:\simulation\data" then for each simulation time step,
+// the electromagnetic field is saved in a file "c:\simulation\data\simA{n}.em", where {n} is time step index which can be 0, 1, 2, ...;
+//"DEF" for "SIM.BASENAME" means to use a base name generated using values of other task parameters.
+//That is, if "SIM.BASENAME" is specified as
+//SIM.BASENAME=DEF
+//then a base file name is generated using values of FDTD.N, FDTD.R and other task parameter values. 
+
+//this task file is for making a simulation as the book "understanding FDTD method" does.
+//see https://github.com/john-b-schneider/uFDTD/tree/master/Code/Fdtd-3d
+//and https://github.com/john-b-schneider/uFDTD/blob/master/Code/Fdtd-3d/3ddemo.c
+
+//task number
+SIM.TASK=100
+
+//in grid3dhomo.c of the book, the grid size is 32, so, in one side of an axis the size is 16
+//N is the number of double intervals, so, it is 8
+FDTD.N=8
+
+//half space range. 
+//the value can be any positive number because 
+//this simulation does not use Initial Value module, it does not use individual ds and dt,
+//it only uses Courant number
+FDTD.R=0.2
+
+//use default base file name
+SIM.BASENAME=DEF
+
+//maximum time steps
+FDTD.MAXTIMESTEP=300
+
+//DLL file name for FDTD plugin module
+SIM.FDTD_DLL=YeeFDTD.DLL
+
+//class name for FDTD plugin module
+SIM.FDTD_NAME=YeeFDTD
+
+//DLL file for boundary condition plugin module
+SIM.BC_DLL=BoundaryConditionA.dll
+
+//class name for boundary condition plugin module
+SIM.BC_NAME=AbcFirstOrder
+
+//DLL file containing Initial Value plugin modules
+SIM.IV_DLL=FieldProviders.dll
+
+//class name of the Initial Value plugin module to be used
+SIM.IV_NAME=ZeroFields
+
+//DLL file for field source plugin module
+SIM.FS_DLL=FieldSourceSamples.dll
+
+//class name for field source plugin module, it is a Ricker source
+SIM.FS_NAME=FieldSourceEz
+
+//the points per wavelength for Ricker source
+FS.PPW=2
+
