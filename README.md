@@ -37,6 +37,8 @@ Test data show that a 6-th order TSS simulation used about 1/8 of Yee FDTD simul
 
 The test reports contains task files so that you can repeat the tests and verify the test results. The full source code is here at https://github.com/Limnor/TSS/tree/master/Source%20Code. You can compile it and run the tests shown in the test report.
 
+For details about TSS, see https://github.com/Limnor/TSS/blob/master/TSS.pdf
+
 You are very welcome to criticize the algorithm, to provide professional guidance, to contribute to the algorithm or to the coding. You can also take its basic ideas and merge it into your own projects, just show your courtesy by presenting a reference to their origin here.
 
 
