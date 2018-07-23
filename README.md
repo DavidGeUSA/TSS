@@ -35,7 +35,7 @@ Due to very high precision TSS can achieve with higher order estimations, large 
 
 Test data show that a 6-th order TSS simulation used about 1/8 of Yee FDTD simulation time and produced field data 10^18 times more accurate than field data produced by Yee FDTD. See test reports at https://github.com/Limnor/TSS/blob/master/FDTD%20Test%20Results.pdf
 
-The test reports contains task files so that you can repeat the tests and verify the test results. The full source code is here. You can compile it and run the tests shown in the test report.
+The test reports contains task files so that you can repeat the tests and verify the test results. The full source code is here at https://github.com/Limnor/TSS/tree/master/Source%20Code. You can compile it and run the tests shown in the test report.
 
 You are very welcome to criticize the algorithm, to provide professional guidance, to contribute to the algorithm or to the coding. You can also take its basic ideas and merge it into your own projects, just show your courtesy by presenting a reference to their origin here.
 
