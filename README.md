@@ -15,6 +15,10 @@ Following FDTD algorithms are implemented as FDTD algorithm plugin modules:
 
 You can review source code of these sample plugin modules to see how you can develop your own plugin modules. 
 
+To get a rough idea of what the software does, read a test report at https://github.com/Limnor/TSS/blob/master/FDTD%20Test%20Results.pdf
+
+To know more about this software, read software specifications at https://github.com/Limnor/TSS/blob/master/EM%20field%20Software%20Spec.pdf
+
 # Time-Space-Synchronized FDTD Simulation
 I am a retired software engineer. I like to play with computer coding. Among the coding I played is Schneider’s teaching book “Understanding the FDTD Method” (https://github.com/john-b-schneider/uFDTD).
 
@@ -26,6 +30,12 @@ One thing I found strange was that the field simulation results provided by an F
 5.	Its computational complexity with regard to the estimation order is linear. That means increasing a little calculation amount can increase accuracy greatly. Therefore, large step sizes can be used, which in turn reduces greatly the calculation amount. The combined effect is that the TSS algorithm is much faster and much more accurate than a traditional FDTD.
 6.	A modular design is used for designing a simulation system. It separates field estimation algorithms from applying boundary conditions. Thus, it is very easy to apply different boundary conditions.
 7.	It does not impose adverse restrictions, limitations, conditions, etc., to its applications comparing to traditional FDTD methods. For example, it can be used for inhomogeneous material just like a traditional FDTD does. That is, given a calculation task, if a traditional FDTD can be used then TSS algorithm can also be used.
+
+Due to very high precision TSS can achieve with higher order estimations, large space steps can be used, which in turn greatly reduces simulation time. Therefore, comparing with standard Yee FDTD, TSS can achieve very high precision in very fast simulation speed.
+
+Test data show that a 6-th order TSS simulation used about 1/8 of Yee FDTD simulation time and produced field data 10^18 times more accurate than field data produced by Yee FDTD. See test reports at https://github.com/Limnor/TSS/blob/master/FDTD%20Test%20Results.pdf
+
+The test reports contains task files so that you can repeat the tests and verify the test results. The full source code is here. You can compile it and run the tests shown in the test report.
 
 You are very welcome to criticize the algorithm, to provide professional guidance, to contribute to the algorithm or to the coding. You can also take its basic ideas and merge it into your own projects, just show your courtesy by presenting a reference to their origin here.
 
