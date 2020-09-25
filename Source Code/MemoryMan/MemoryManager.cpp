@@ -1,5 +1,5 @@
 /*
-	Author: Bob Limnor (bob@limnor.com)
+	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 04/01/2018
 	Allrights reserved
 
