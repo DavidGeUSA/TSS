@@ -1,7 +1,7 @@
 /*******************************************************************
-	Author: Bob Limnor (bob@limnor.com, aka Wei Ge)
+	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
-	Allrights reserved by Bob Limnor
+	Allrights reserved by David Ge
 
 ********************************************************************/
 
@@ -891,7 +891,7 @@ int IndexToIndexes(unsigned radius, size_t a, int *m, int *n, int *p)
 				//last index : 49+24*(r-2) = 24r + 1
 				else
 				{
-					//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=±r:24r+2 to 32r-7,8(r-1) points
+					//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=Â±r:24r+2 to 32r-7,8(r-1) points
 					u = 48 * r - 23;
 					if(a <= u)
 					{
@@ -1280,7 +1280,7 @@ int GoThroughSphereByIndexes::gothroughSphere(int maxR)
 				handleData(-r, -k, -r);
 			}
 			//last index : 49+24*(r-2) = 24r + 1
-			//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=±r:24r+2 to 32r-7,8(r-1) points
+			//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=Â±r:24r+2 to 32r-7,8(r-1) points
 			//d = 0;
 			for(k=1;k<r;k++)
 			{
@@ -1626,7 +1626,7 @@ int GoThroughSphereBySpaces::gothroughSphere(int maxR, double ds)
 			handleData(x2, -d, z2);
 		}
 		//last index : 49+24*(r-2) = 24r + 1
-		//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=±r:24r+2 to 32r-7,8(r-1) points
+		//4 Inner parts of cross-lines on m-plane. One axis at 0 and m=Â±r:24r+2 to 32r-7,8(r-1) points
 		d = 0;
 		for(k=1;k<r;k++)
 		{
