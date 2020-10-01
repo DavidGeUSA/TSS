@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////////////////
 	TaskFile *taskfile = NULL; //task file object for reading task parameters
 	int taskIndex = -1; //index into tasks array identifying the task to run
-	puts("\r\n.\r\n  Electromagnetic fields Analysis. Version 1.1.1. 2017-02-08 - 2018-03-30.\r\n  Author: Bob Limnor (bob@limnor.com)\r\n.\r\n");
+	puts("\r\n.\r\n  Electromagnetic fields Analysis. Version 1.1.1. 2017-02-08 - 2018-03-30.\r\n  Author: David Ge (dge893@gmail.com)\r\n.\r\n");
 	//
 	taskFile[0] = workfolder[0] = libFolder[0] = dataFolder[0] = dataFolder2[0] = 0;
 	workfolderW[0] = 0;
@@ -357,6 +357,9 @@ int main(int argc, char* argv[])
 			break;
 		case TASK_2DS_SUMFILES_TO_ONE:
 			ret = task160_mergeSummaryFiles(taskfile, dataFolder, dataFolder2);
+			break;
+		case TASK_MAKE_POINT_TIME_FILE:
+			ret = task170_makePointTimeFile(taskfile, dataFolder);
 			break;
 		default:
 			ret = ERR_SIM_TASK_NOCODE;
