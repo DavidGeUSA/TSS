@@ -2,7 +2,7 @@
 #define __TASKFILE_H__
 
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -130,6 +130,8 @@ public:
 #define TP_SIMFILE1     "SIM.FILE1"
 #define TP_SIMFILE2     "SIM.FILE2"
 #define TP_SIMTHICKNESS "SIM.THICKNESS"
-
+#define TP_POINTM       "POINT.m"
+#define TP_POINTN       "POINT.n"
+#define TP_POINTP       "POINT.p"
 
 #endif
