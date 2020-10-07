@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -238,7 +238,12 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 				reportProcess(reporter, true, "Reached time index: %d, time for this step: %d ms. average time:%g", fdtd->GetTimeStepIndex(), timeUsed, averageStepTime);
 				if(fa != NULL)
 				{
-					ret = fa->setFields(fdtd->GetFieldMemory(), maxRadius-(int)fdtd->GetTimeStepIndex()-2,fdtd->GetSpaceStepSize(), fdtd->getHalfOrderSpaceDerivate());
+					int radiusToCount = maxRadius - (int)fdtd->GetTimeStepIndex() - 2; //the maximum radius to calculate the divergence, excluding the boudary
+					if (radiusToCount <= 0)
+					{
+						radiusToCount = maxRadius;//the boudary error has reached the center, no more excluding the boundary
+					}
+					ret = fa->setFields(fdtd->GetFieldMemory(), radiusToCount, fdtd->GetSpaceStepSize(), fdtd->getHalfOrderSpaceDerivate());
 					if(ret == ERR_OK)
 					{
 						ret = fa->execute();
@@ -266,46 +271,49 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 				}
 			}
 		}
-		if(EnabledFDTDtimeRecording())
+		if (ret == ERR_OK)
 		{
-			//create a summary and append it to a file.
-			char sumFile[FILENAME_MAX];
-			ret = fdtd->GetTemporaryFolder(sumFile, FILENAME_MAX);
-			if(ret == ERR_OK)
+			if (EnabledFDTDtimeRecording())
 			{
-				ret = formFilePath(sumFile, FILENAME_MAX, sumFile, "EMsummary");
-				if(ret == ERR_OK)
+				//create a summary and append it to a file.
+				char sumFile[FILENAME_MAX];
+				ret = fdtd->GetTemporaryFolder(sumFile, FILENAME_MAX);
+				if (ret == ERR_OK)
 				{
-					int err = sprintf_s(sumFile, FILENAME_MAX, "%s%d.txt", sumFile, fdtd->getMaximumTimeIndex());
-					if(err <= 0)
+					ret = formFilePath(sumFile, FILENAME_MAX, sumFile, "EMsummary");
+					if (ret == ERR_OK)
 					{
-						ret = ERR_MEM_EINVAL;
+						int err = sprintf_s(sumFile, FILENAME_MAX, "%s%d.txt", sumFile, fdtd->getMaximumTimeIndex());
+						if (err <= 0)
+						{
+							ret = ERR_MEM_EINVAL;
+						}
 					}
 				}
-			}
-			if(ret == ERR_OK)
-			{
-				ret = openTextfileAppend(sumFile, &fhSummary);
-				if(fhSummary != 0)
+				if (ret == ERR_OK)
 				{
-					//append report
-					//{average divergence magnitude},{time used},{FDTD class name}, order ({time order}, {space order}), N={N}
-					int err;
-					char msg[500];
-					avgE = avgE / (double)fdtd->GetTimeStepIndex();
-					avgH = avgH / (double)fdtd->GetTimeStepIndex();
-					avgE = sqrt(avgE*avgE + avgH*avgH);
-					err = sprintf_s(msg, 500, "%g,%g,%s(%d,%d)N%d\r\n", avgE, fdtd->GetSumFDTDOneStepTime(),fdtd->getClassName(), timeAdvanceOrder, spaceDerivativeOrder, N);
-					if(err <= 0)
+					ret = openTextfileAppend(sumFile, &fhSummary);
+					if (fhSummary != 0)
 					{
-						ret = ERR_MEM_EINVAL;
+						//append report
+						//{average divergence magnitude},{time used},{FDTD class name}, order ({time order}, {space order}), N={N}
+						int err;
+						char msg[500];
+						avgE = avgE / (double)fdtd->GetTimeStepIndex();
+						avgH = avgH / (double)fdtd->GetTimeStepIndex();
+						avgE = sqrt(avgE*avgE + avgH*avgH);
+						err = sprintf_s(msg, 500, "%g,%g,%s(%d,%d)N%d\r\n", avgE, fdtd->GetSumFDTDOneStepTime(), fdtd->getClassName(), timeAdvanceOrder, spaceDerivativeOrder, N);
+						if (err <= 0)
+						{
+							ret = ERR_MEM_EINVAL;
+						}
+						else
+						{
+							ret = writefile(fhSummary, msg, (unsigned int)strlen(msg));
+						}
+						closefile(fhSummary);
+						printf("\r\nAverage FDTD step time:%g, total FDTD time:%g\r\n", GetAverageFDTDOneStepTime(), GetSumFDTDOneStepTime());
 					}
-					else
-					{
-						ret = writefile(fhSummary, msg, (unsigned int)strlen(msg));
-					}
-					closefile(fhSummary);
-					printf("\r\nAverage FDTD step time:%g, total FDTD time:%g\r\n", GetAverageFDTDOneStepTime(), GetSumFDTDOneStepTime());
 				}
 			}
 		}
