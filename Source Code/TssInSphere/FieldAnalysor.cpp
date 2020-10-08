@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -48,16 +48,23 @@ int FieldAnalysor::setFields(FieldPoint3D *fields, int maxR, double spaceStep, i
 {
 	cleanup();
 	_fields = fields;
-	maxRadius = maxR;
-	ds = spaceStep;
-	_halfOrder = halfOrder;
-	_derivativeAsymmetric = new DerivativeEstimatorAsymmetric(_halfOrder, maxRadius, seriesIndex);
-	_divergenceEstimator = new FieldStatisticsByDivergenceAsymmetric(_derivativeAsymmetric, _fields, ds);
-	_derivativeAsymmetric->prepareCoefficeints();
-	ret = _derivativeAsymmetric->GetLastHandlerError();
-	if(ret == ERR_OK)
+	if (maxR <= 0)
 	{
-		ret = _divergenceEstimator->AllocateList(maxRadius);
+		ret = ERR_INVALID_SIZE;
+	}
+	else
+	{
+		maxRadius = maxR;
+		ds = spaceStep;
+		_halfOrder = halfOrder;
+		_derivativeAsymmetric = new DerivativeEstimatorAsymmetric(_halfOrder, maxRadius, seriesIndex);
+		_divergenceEstimator = new FieldStatisticsByDivergenceAsymmetric(_derivativeAsymmetric, _fields, ds);
+		_derivativeAsymmetric->prepareCoefficeints();
+		ret = _derivativeAsymmetric->GetLastHandlerError();
+		if (ret == ERR_OK)
+		{
+			ret = _divergenceEstimator->AllocateList(maxRadius);
+		}
 	}
 	return ret;
 }
