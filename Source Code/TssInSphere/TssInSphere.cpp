@@ -1,5 +1,5 @@
-/*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+﻿/*******************************************************************
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -15,7 +15,7 @@
 TssInSphere::TssInSphere(void)
 {
 	//physics constants ==============
-	c0 = 299792458; //speed of light
+	c0 = 299792458.0; //speed of light
 	mu0 = 4.0 * M_PI * 1.0e-7;
 	eps0 = 1.0 /(mu0 * c0 * c0);
 	//=================================
@@ -272,6 +272,9 @@ int TssInSphere::applyCurls(int k)
 	}
 	return ret;
 }
+
+//uncomment it to do debug
+//#define DEBUG2NDORDER
 /*
 	advance time forward by one step of dt
 */
@@ -291,6 +294,22 @@ int TssInSphere::updateFieldsToMoveForward()
 		{
 			startTime = getTimeCount();
 		}
+		//DEBUG verify TSS via Ricker source ///////////////
+#ifdef DEBUG2NDORDER
+		size_t debugTime = 300;
+		FieldPoint3D *f1 = NULL, *f2=NULL;
+		if (_timeIndex == debugTime)
+		{
+			f1 = (FieldPoint3D *)AllocateMemory(fieldMemorySize);
+			f2 = (FieldPoint3D *)AllocateMemory(fieldMemorySize);
+			for (size_t i = 0; i<fieldItems; i++)
+			{
+				f1[i] = HE[i];
+				f2[i] = HE[i];
+			}
+		}
+#endif
+		////////////////////////////////////////////////////
 		//bring fields to _time
 		//use each order of space curls to get each order of temporal derivative for advancing fields in time
 		for(int k = 0; k < _maxOrderTimeAdvance; k++)
@@ -304,6 +323,79 @@ int TssInSphere::updateFieldsToMoveForward()
 				break;
 			}
 		}
+		//DEBUG verify 2nd order TSS  //////////////////
+#ifdef DEBUG2NDORDER
+#define IDX(m,n,p) seriesIndex->Index((m), (n), (p))
+
+		if (_timeIndex == debugTime)
+		{
+			int rMax = (int)maxRadius;
+			double mag;
+			double aev = ((1.0 / 2.0) / sqrt(3.0))*sqrt(mu0 / eps0); //1/(2√3) √(μ/ε)
+			double ahv = ((1.0 / 2.0) / sqrt(3.0))*sqrt(eps0 / mu0); //1/(2√3) √(ε/μ)
+			double errSum = 0.0, err;
+			int bound = 3;
+			for (int m = bound - rMax; m <= rMax - bound; m++)
+			{
+				for (int n = bound - rMax; n <= rMax - bound; n++)
+				{
+					for (int p = bound - rMax; p <= rMax - bound; p++)
+					{
+						size_t idx = seriesIndex->Index(m, n, p);
+						//check ret here
+						//Ex <- H_z (m,n+1,p)-H_z (m,n-1,p)-H_y (m,n,p+1)+H_y (m,n,p-1)
+						//Ey <- H_x (m,n,p+1)-H_x (m,n,p-1)-H_z (m+1,n,p)+H_z (m-1,n,p)
+						//Ez <- H_y (m+1,n,p)-H_y (m-1,n,p)-H_x (m,n+1,p)+H_x (m,n-1,p)
+						f2[idx].E.x = f1[idx].E.x + (f1[IDX(m, n + 1, p)].H.z - f1[IDX(m, n - 1, p)].H.z - f1[IDX(m, n, p + 1)].H.y + f1[IDX(m, n, p - 1)].H.y)*aev;
+						f2[idx].E.y = f1[idx].E.y + (f1[IDX(m, n, p + 1)].H.x - f1[IDX(m, n, p - 1)].H.x - f1[IDX(m + 1, n, p)].H.z + f1[IDX(m - 1, n, p)].H.z)*aev;
+						f2[idx].E.z = f1[idx].E.z + (f1[IDX(m + 1, n, p)].H.y - f1[IDX(m - 1, n, p)].H.y - f1[IDX(m, n + 1, p)].H.x + f1[IDX(m, n - 1, p)].H.x)*aev;
+						//Hx <- E_z (m,n+1,p)-E_z (m,n-1,p)-E_y (m,n,p+1)+E_y (m,n,p-1)
+						//Hy <- E_x (m,n,p+1)-E_x (m,n,p-1)-E_z (m+1,n,p)+E_z (m-1,n,p)
+						//Hz <- E_y (m+1,n,p)-E_y (m-1,n,p)-E_x (m,n+1,p)+E_x (m,n-1,p)
+						f2[idx].H.x = f1[idx].H.x - (f1[IDX(m, n + 1, p)].E.z - f1[IDX(m, n - 1, p)].E.z - f1[IDX(m, n, p + 1)].E.y + f1[IDX(m, n, p - 1)].E.y)*ahv;
+						f2[idx].H.y = f1[idx].H.y - (f1[IDX(m, n, p + 1)].E.x - f1[IDX(m, n, p - 1)].E.x - f1[IDX(m + 1, n, p)].E.z + f1[IDX(m - 1, n, p)].E.z)*ahv;
+						f2[idx].H.z = f1[idx].H.z - (f1[IDX(m + 1, n, p)].E.y - f1[IDX(m - 1, n, p)].E.y - f1[IDX(m, n + 1, p)].E.x + f1[IDX(m, n - 1, p)].E.x)*ahv;
+						//
+						err = (f2[idx].E.x - HE[idx].E.x)*(f2[idx].E.x - HE[idx].E.x) + (f2[idx].E.y - HE[idx].E.y)*(f2[idx].E.y - HE[idx].E.y) + (f2[idx].E.z - HE[idx].E.z)*(f2[idx].E.z - HE[idx].E.z);
+						mag = f2[idx].E.x*f2[idx].E.x + f2[idx].E.y*f2[idx].E.y + f2[idx].E.z*f2[idx].E.z;
+						if (mag > 1.0)
+						{
+							err = err / mag;
+						}
+						if (err > 1.0e-8)
+						{
+							p = p; //break here
+						}
+						errSum += err;
+						err = (f2[idx].H.x - HE[idx].H.x)*(f2[idx].H.x - HE[idx].H.x) + (f2[idx].H.y - HE[idx].H.y)*(f2[idx].H.y - HE[idx].H.y) + (f2[idx].H.z - HE[idx].H.z)*(f2[idx].H.z - HE[idx].H.z);
+						mag = f2[idx].E.x*f2[idx].E.x + f2[idx].E.y*f2[idx].E.y + f2[idx].E.z*f2[idx].E.z;
+						if (mag > 1.0)
+						{
+							err = err / mag;
+						}
+						if (err > 1.0e-8)
+						{
+							p = p; //break here
+						}
+						errSum += err;
+					}
+				}
+			}
+			if (errSum > 1.0e-8)
+			{
+				err = err; //break;
+			}
+		}
+		if (f1 != NULL)
+		{
+			FreeMemory(f1);
+		}
+		if (f2 != NULL)
+		{
+			FreeMemory(f2);
+		}
+#endif
+		///////////////////////////////////////////////////////
 		if(_recordFDTDStepTimes)
 		{
 			endTime = getTimeCount(); timeUsed = endTime - startTime;
