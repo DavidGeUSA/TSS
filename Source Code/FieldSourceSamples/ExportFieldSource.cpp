@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 06/12/2017
 	Allrights reserved by David Ge
 
@@ -10,6 +10,7 @@
 	To use a class, a program specifies DLL file path and a class name.
 */
 #include "FieldSourceEz.h"
+#include "SourceX.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -29,22 +30,37 @@ extern "C"
 FieldSourceEz **srcezList = NULL;
 unsigned int srcezCount = 0;
 
+SourceX **sourcexList = NULL;
+unsigned int sourcexCount = 0;
+
 __declspec (dllexport) void RemovePluginInstances()
 {
 	REMOVEALLPLUGINS(FieldSourceEz, srcezCount, srcezList);
+	REMOVEALLPLUGINS(SourceX, sourcexCount, sourcexList);
 }
 
 __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
 {
-	FieldSource *p = NULL;
     if(strcmp(name,"FieldSourceEz") == 0)
 	{
+		FieldSource *p = NULL;
 		CREATEPLUGININSTANCE(FieldSourceEz, srcezCount, srcezList);
+		if (p != NULL)
+		{
+			p->setClassName(name);
+		}
+		return p;
 	}
-	if(p != NULL)
+	else if (strcmp(name, "SourceX") == 0)
 	{
-		p->setClassName(name);
+		SourceX *p = NULL;
+		CREATEPLUGININSTANCE(SourceX, sourcexCount, sourcexList);
+		if (p != NULL)
+		{
+			p->setClassName(name);
+		}
+		return p;
 	}
-	return p;
+	return NULL;
 }
 

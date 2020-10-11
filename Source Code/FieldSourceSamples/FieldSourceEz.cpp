@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -71,8 +71,10 @@ void FieldSourceEz::handleData(int m, int n, int p)
 		Ex((SizeX - 1) / 2, SizeY / 2, SizeZ / 2) += ezInc(Time, 0.0);
 	*/
 	double arg;
-	arg = M_PI * ((Cdtds * _time - 0.0) / ppw - 1.0);
+	//arg = M_PI * ((Cdtds * _time - 0.0) / ppw - 1.0);
+	arg = M_PI * ((Cdtds * (double)_timeIndex - 0.0) / ppw - 1.0);
 	arg = arg * arg;
 	//m=n=p=0 is the first element of array _fields
-	_fields[0].E.z += (1.0 - 2.0 * arg) * exp(-arg);
+	_fields[0].E.x += (1.0 - 2.0 * arg) * exp(-arg);   //Schneider uses Ex
+	//_fields[0].E.z += (1.0 - 2.0 * arg) * exp(-arg); //should be Ez? it dosen't matter as long as we keep this in mind
 }
