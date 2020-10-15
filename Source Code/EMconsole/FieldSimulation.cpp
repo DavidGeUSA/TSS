@@ -158,7 +158,7 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 					{
 						if(source != NULL)
 						{
-							ret = source->initialize(fdtd->getCourantNumber(), maxRadius, taskConfig);
+							ret = source->initialize(fdtd->getCourantNumber(), fdtd->GetTimeStepSize(), fdtd->GetSpaceStepSize(), maxRadius, taskConfig);
 						}
 					}
 				}
@@ -206,6 +206,18 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 		{
 			fa = new FieldAnalysor(seriesIndex);
 		}
+		//apply field source
+		if (source != NULL)
+		{
+			source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
+			ret = source->gothroughSphere(maxRadius);
+		}
+		//apply boundary condition
+		if (ret == ERR_OK)
+		{
+			boundaryCondition->setFields(fdtd->GetFieldMemory());
+			ret = boundaryCondition->gothroughSphere(maxRadius);
+		}
 		//time advance loop
 		while(ret == ERR_OK)
 		{
@@ -215,15 +227,15 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 			ret = fdtd->moveForward();
 			if(ret == ERR_OK)
 			{
-				if(source != NULL)
+				//apply field source
+				if (source != NULL)
 				{
-					//apply field source
 					source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
 					ret = source->gothroughSphere(maxRadius);
 				}
+				//apply boundary condition
 				if(ret == ERR_OK)
 				{
-					//apply boundary condition
 					boundaryCondition->setFields(fdtd->GetFieldMemory());
 					ret = boundaryCondition->gothroughSphere(maxRadius);
 				}
@@ -271,7 +283,7 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 				}
 			}
 		}
-		if (ret == ERR_OK)
+		if (ret == ERR_OK || ret == ERR_REACHED_TIME_LIMIT)
 		{
 			if (EnabledFDTDtimeRecording())
 			{
