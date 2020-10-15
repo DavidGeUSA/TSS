@@ -1,6 +1,6 @@
 
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 06/12/2017
 	Allrights reserved by David Ge
 
@@ -31,11 +31,14 @@ TssFDTD **tssList = NULL;
 unsigned int tssCount = 0;
 TssFDTDinhomo **tssinhomoList = NULL;
 unsigned int tssInhomoCOunt = 0;
+FourthSpaceOrderTss **tss4List = NULL;
+unsigned int tss4Count = 0;
 
 __declspec (dllexport) void RemovePluginInstances()
 {
 	REMOVEALLPLUGINS(TssFDTD, tssCount, tssList);
 	REMOVEALLPLUGINS(TssFDTDinhomo, tssInhomoCOunt, tssinhomoList);
+	REMOVEALLPLUGINS(FourthSpaceOrderTss, tss4Count, tss4List);
 }
 __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
 {
@@ -47,6 +50,10 @@ __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
 	else if(strcmp(name, "TssFDTDinhomo") == 0)
 	{
 		CREATEPLUGININSTANCE(TssFDTDinhomo, tssInhomoCOunt, tssinhomoList);
+	}
+	else if (strcmp(name, "FourthSpaceOrderTss") == 0)
+	{
+		CREATEPLUGININSTANCE(FourthSpaceOrderTss, tss4Count, tss4List);
 	}
 	if(p != NULL)
 	{
