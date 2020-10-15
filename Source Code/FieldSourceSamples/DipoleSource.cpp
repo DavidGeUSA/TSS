@@ -29,6 +29,8 @@ int DipoleSource::initialize(double Courant, double timeStep, double spaceStep, 
 
 RadiusHandleType DipoleSource::setRadius(int radius)
 {
+	if (radius > 0)
+		return Finish;
 	return NeedProcess;
 }
 
