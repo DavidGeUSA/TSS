@@ -18,12 +18,24 @@
     <ClInclude Include="FieldSourceEz.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SourceX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DipoleSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FieldSourceEz.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ExportFieldSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SourceX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DipoleSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

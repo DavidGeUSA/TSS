@@ -18,9 +18,9 @@ FieldSourceEz::FieldSourceEz(void)
 	in the book "understanding FDTD method", ppw is read from keyboard input.
 	here we get it from a task parameter; parameter name is FS.PPW
 */
-int FieldSourceEz::initialize(double Courant, int maximumRadius, TaskFile *taskParameters)
+int FieldSourceEz::initialize(double Courant, double timeStep, double spaceStep, int maximumRadius, TaskFile *taskParameters)
 {
-	int ret = FieldSource::initialize(Courant, maximumRadius, taskParameters);
+	int ret = FieldSource::initialize(Courant,timeStep,spaceStep, maximumRadius, taskParameters);
 	if(ret == ERR_OK)
 	{
 		ppw = taskParameters->getDouble(TP_FS_PPW, false);

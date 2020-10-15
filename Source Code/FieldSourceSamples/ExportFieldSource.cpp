@@ -11,6 +11,7 @@
 */
 #include "FieldSourceEz.h"
 #include "SourceX.h"
+#include "DipoleSource.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -33,34 +34,35 @@ unsigned int srcezCount = 0;
 SourceX **sourcexList = NULL;
 unsigned int sourcexCount = 0;
 
+DipoleSource **dipoleList = NULL;
+unsigned int dipoleCount = 0;
+
 __declspec (dllexport) void RemovePluginInstances()
 {
 	REMOVEALLPLUGINS(FieldSourceEz, srcezCount, srcezList);
 	REMOVEALLPLUGINS(SourceX, sourcexCount, sourcexList);
+	REMOVEALLPLUGINS(DipoleSource, dipoleCount, dipoleList);
 }
 
 __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
 {
+	FieldSource *p = NULL;
     if(strcmp(name,"FieldSourceEz") == 0)
 	{
-		FieldSource *p = NULL;
 		CREATEPLUGININSTANCE(FieldSourceEz, srcezCount, srcezList);
-		if (p != NULL)
-		{
-			p->setClassName(name);
-		}
-		return p;
 	}
 	else if (strcmp(name, "SourceX") == 0)
 	{
-		SourceX *p = NULL;
 		CREATEPLUGININSTANCE(SourceX, sourcexCount, sourcexList);
-		if (p != NULL)
-		{
-			p->setClassName(name);
-		}
-		return p;
 	}
-	return NULL;
+	else if (strcmp(name, "DipoleSource") == 0)
+	{
+		CREATEPLUGININSTANCE(DipoleSource, dipoleCount, dipoleList);
+	}
+	if (p != NULL)
+	{
+		p->setClassName(name);
+	}
+	return p;
 }
 

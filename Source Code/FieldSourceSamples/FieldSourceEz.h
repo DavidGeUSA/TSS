@@ -27,7 +27,7 @@ private:
 public:
 	FieldSourceEz(void);
 	//
-	virtual int initialize(double Courant, int maximumRadius, TaskFile *taskParameters);
+	virtual int initialize(double Courant, double timeStep, double spaceStep, int maximumRadius, TaskFile *taskParameters);
 	//
 	//GoThroughSphereByIndexes members
 	virtual RadiusHandleType setRadius(int radius);

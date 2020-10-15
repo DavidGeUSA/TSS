@@ -143,10 +143,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DipoleSource.h" />
     <ClInclude Include="FieldSourceEz.h" />
     <ClInclude Include="SourceX.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DipoleSource.cpp" />
     <ClCompile Include="ExportFieldSource.cpp" />
     <ClCompile Include="FieldSourceEz.cpp" />
     <ClCompile Include="SourceX.cpp" />
