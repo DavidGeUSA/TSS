@@ -2,7 +2,7 @@
 #define __FIELDSOURCE_H__
 
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -22,6 +22,8 @@ class FieldSource: public GoThroughSphereByIndexes, public virtual MemoryManUser
 {
 protected:
 	double Cdtds;          //Courant number = 1.0 / sqrt(3.0)
+	double dt;             //time step = (ds / c0) / sqrt(3.0);
+	double ds;             //space step
 	FieldPoint3D *_fields; //EM field. the source will be applied to it
 	size_t _timeIndex;     //time step index, in case a source may need it
 	double _time;          //time value, in case a source may need it
@@ -31,7 +33,7 @@ public:
 	/*
 		initialize the source. a subclass overrides this function to do more initializations, including reading back task parameters.
 	*/
-	virtual int initialize(double Courant, int maximumRadius, TaskFile *taskParameters);
+	virtual int initialize(double Courant,double timeStep, double spaceStep, int maximumRadius, TaskFile *taskParameters);
 
 	/*
 		prepare variables for the source to work
