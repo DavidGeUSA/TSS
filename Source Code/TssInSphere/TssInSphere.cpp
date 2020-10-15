@@ -331,8 +331,8 @@ int TssInSphere::updateFieldsToMoveForward()
 		{
 			int rMax = (int)maxRadius;
 			double mag;
-			double aev = ((1.0 / 2.0) / sqrt(3.0))*sqrt(mu0 / eps0); //1/(2√3) √(μ/ε)
-			double ahv = ((1.0 / 2.0) / sqrt(3.0))*sqrt(eps0 / mu0); //1/(2√3) √(ε/μ)
+			double aev = dt / (2.0*eps0*ds);//((1.0 / 2.0) / sqrt(3.0))*sqrt(mu0 / eps0); //1/(2√3) √(μ/ε)
+			double ahv = dt / (2.0*mu0*ds);// ((1.0 / 2.0) / sqrt(3.0))*sqrt(eps0 / mu0); //1/(2√3) √(ε/μ)
 			double errSum = 0.0, err;
 			int bound = 3;
 			for (int m = bound - rMax; m <= rMax - bound; m++)

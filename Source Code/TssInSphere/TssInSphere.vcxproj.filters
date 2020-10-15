@@ -48,6 +48,9 @@
     <ClInclude Include="ApplyCurlsInhomogeneous.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FourthSpaceOrderTss.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DerivativeEstimator.cpp">
@@ -78,6 +81,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TssInhomogeneous.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FourthSpaceOrderTss.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
