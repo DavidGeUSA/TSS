@@ -35,7 +35,7 @@ public:
 	4-th order TSS
 */
 class FourthSpaceOrderTss :
-	public FDTD
+	virtual public FDTD
 {
 private :
 	double mu0;  //Permeability

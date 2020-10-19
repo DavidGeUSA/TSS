@@ -1,6 +1,6 @@
 #pragma once
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -29,7 +29,7 @@
 /*
 	Time-Space-Synchronized FDTD algorithm
 */
-class TssInSphere: public virtual FDTD //virtual FdtdMemory, public virtual RadiusIndexCacheUser
+class TssInSphere: public virtual FDTD
 {
 private:
 	//

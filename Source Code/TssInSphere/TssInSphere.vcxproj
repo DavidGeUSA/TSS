@@ -36,7 +36,7 @@
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
@@ -140,6 +140,7 @@
     <ClInclude Include="FieldStatistics.h" />
     <ClInclude Include="FieldStatisticsByDivergence.h" />
     <ClInclude Include="FourthSpaceOrderTss.h" />
+    <ClInclude Include="Tss.h" />
     <ClInclude Include="TssInhomogeneous.h" />
     <ClInclude Include="TssInSphere.h" />
   </ItemGroup>
@@ -153,6 +154,7 @@
     <ClCompile Include="FieldStatistics.cpp" />
     <ClCompile Include="FieldStatisticsByDivergence.cpp" />
     <ClCompile Include="FourthSpaceOrderTss.cpp" />
+    <ClCompile Include="Tss.cpp" />
     <ClCompile Include="TssInhomogeneous.cpp" />
     <ClCompile Include="TssInSphere.cpp" />
   </ItemGroup>
