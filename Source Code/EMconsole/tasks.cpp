@@ -1244,14 +1244,11 @@ int task170_makePointTimeFile(TaskFile *taskConfig, const char *dataFolder)
 	{
 		char fnameBase[FILENAME_MAX];
 		unsigned int r = max(abs(m), max(abs(n), abs(p)));
-		//one dimensional array index for this space location
-		size_t index = IndexesToIndex(r, m, n, p, &ret);
+		ret = formFilePath(fnameBase, FILENAME_MAX, dataFolder, filename);
 		if (ret == ERR_OK)
 		{
-			ret = formFilePath(fnameBase, FILENAME_MAX, dataFolder, filename);
-		}
-		if (ret == ERR_OK)
-		{
+			//one dimensional array index for this space location
+			size_t index = 0;
 			char outFileBin[FILENAME_MAX]; //binary output file name
 			char outFileTxt[FILENAME_MAX]; //text output file name
 			int err = sprintf_s(outFileBin, FILENAME_MAX, "%s_%d_%d_%d.dat", fnameBase,m,n,p);
@@ -1316,6 +1313,10 @@ int task170_makePointTimeFile(TaskFile *taskConfig, const char *dataFolder)
 												if (ret == ERR_OK)
 												{
 													size_t itemCount = totalPointsInSphere(rMax);
+													RadiusIndexToSeriesIndex R;
+													ret = R.initialize(rMax);
+													size_t idx = R.Index(m, n, p);
+													index = idx;
 													if (itemCount < index)
 													{
 														//invalid space location
@@ -1338,7 +1339,7 @@ int task170_makePointTimeFile(TaskFile *taskConfig, const char *dataFolder)
 												{
 													//form text data
 													char buff[1024];
-													err = sprintf_s(buff, 1024, "%g\t%g\t%g\t%g\t%g\t%g\r\n", 
+													err = sprintf_s(buff, 1024, "%g\t%g\t%g\t%g\t%g\t%g\n", 
 														fields[index].E.x,
 														fields[index].E.y,
 														fields[index].E.z,

@@ -149,17 +149,14 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 				//initialize plug-in objects
 				ret = field0->initialize(taskConfig);
 			}
-			if(ret == ERR_OK)
+			if (ret == ERR_OK)
 			{
-				if(ret == ERR_OK)
+				ret = fdtd->initialize(dataFolder, tfsf, taskConfig);
+				if (ret == ERR_OK)
 				{
-					ret = fdtd->initialize(dataFolder, tfsf, taskConfig);
-					if(ret == ERR_OK)
+					if (source != NULL)
 					{
-						if(source != NULL)
-						{
-							ret = source->initialize(fdtd->getCourantNumber(), fdtd->GetTimeStepSize(), fdtd->GetSpaceStepSize(), maxRadius, taskConfig);
-						}
+						ret = source->initialize(fdtd->getCourantNumber(), fdtd->GetTimeStepSize(), fdtd->GetSpaceStepSize(), maxRadius, taskConfig);
 					}
 				}
 			}
@@ -209,14 +206,16 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 		//apply field source
 		if (source != NULL)
 		{
-			source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
-			ret = source->gothroughSphere(maxRadius);
+			//source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
+			//ret = source->gothroughSphere(maxRadius);
+			ret = fdtd->applySource(source);
 		}
 		//apply boundary condition
 		if (ret == ERR_OK)
 		{
-			boundaryCondition->setFields(fdtd->GetFieldMemory());
-			ret = boundaryCondition->gothroughSphere(maxRadius);
+			//boundaryCondition->setFields(fdtd->GetFieldMemory());
+			//ret = boundaryCondition->gothroughSphere(maxRadius);
+			ret = fdtd->applyBoundaryCondition(boundaryCondition);
 		}
 		//time advance loop
 		while(ret == ERR_OK)
@@ -230,14 +229,16 @@ int FieldSimulation::simulationToFiles(TaskFile *taskConfig, const char *dataFol
 				//apply field source
 				if (source != NULL)
 				{
-					source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
-					ret = source->gothroughSphere(maxRadius);
+					//source->reset(fdtd->GetFieldMemory(), fdtd->GetTimeStepIndex(), fdtd->getTime());
+					//ret = source->gothroughSphere(maxRadius);
+					ret = fdtd->applySource(source);
 				}
 				//apply boundary condition
 				if(ret == ERR_OK)
 				{
-					boundaryCondition->setFields(fdtd->GetFieldMemory());
-					ret = boundaryCondition->gothroughSphere(maxRadius);
+					//boundaryCondition->setFields(fdtd->GetFieldMemory());
+					//ret = boundaryCondition->gothroughSphere(maxRadius);
+					ret = fdtd->applyBoundaryCondition(boundaryCondition);
 				}
 			}
 			if(ret == ERR_OK)
