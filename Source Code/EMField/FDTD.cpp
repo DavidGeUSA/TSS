@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -212,7 +212,35 @@ int FDTD::initialize(const char *dataFolder, TotalFieldScatteredFieldBoundary *t
 	}
 	return ret;
 }
+int FDTD::applySource(FieldSource *source)
+{
+	int ret = ERR_OK;
+	if (HE == NULL)
+	{
+		ret = ERR_INVALID_CALL;
+	}
+	else
+	{
+		source->reset(GetFieldMemory(), GetTimeStepIndex(), getTime());
+		ret = source->gothroughSphere(maxRadius);
+	}
+	return ret;
+}
+int FDTD::applyBoundaryCondition(BoundaryCondition *bc)
+{
+	int ret = ERR_OK;
+	if (HE == NULL)
+	{
+		ret = ERR_INVALID_CALL;
+	}
+	else
+	{
+		bc->setFields(GetFieldMemory());
+		ret = bc->gothroughSphere(maxRadius);
+	}
+	return ret;
 
+}
 int FDTD::moveForward()
 {
 	int ret  = updateFieldsToMoveForward();

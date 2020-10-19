@@ -2,7 +2,7 @@
 #define __FDTD_H__
 
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -12,6 +12,8 @@
 #include "RadiusIndex.h"
 #include "FdtdMemory.h"
 #include "Plugin.h"
+#include "FieldSource.h"
+#include "BoundaryCondition.h"
 #include "TotalFieldScatteredFieldBoundary.h"
 #include "..\FileUtil\taskFile.h"
 #include "..\OutputUtil\OutputUtility.h"
@@ -99,6 +101,19 @@ public:
 
 	*/
 	int initialize(const char *dataFolder, TotalFieldScatteredFieldBoundary *tfsf, TaskFile *taskParameters);
+
+	/*
+		default handling: calls source->reset and source->gothroughSphere(maxRadius)
+		give derived classes a chance to modify the default behaviour
+	*/
+	virtual int applySource(FieldSource *source);
+
+	/*
+	default handling: calls bc->setFields and bc->gothroughSphere(maxRadius)
+	give derived classes a chance to modify the default behaviour
+	*/
+	virtual int applyBoundaryCondition(BoundaryCondition *bc);
+
 	/*
 		move one time step forward
 	*/
