@@ -1,12 +1,22 @@
 #pragma once
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
 ********************************************************************/
 
 #include "YeeFDTD.h"
+
+/*
+	in the task file, use the following names to indicate the simulations to apply field source
+*/
+//#define SourceApplyToEx "SOURCEAPPLY.Ex"
+//#define SourceApplyToEy "SOURCEAPPLY.Ey"
+//#define SourceApplyToEz "SOURCEAPPLY.Ez"
+//#define SourceApplyToHx "SOURCEAPPLY.Hx"
+//#define SourceApplyToHy "SOURCEAPPLY.Hy"
+//#define SourceApplyToHz "SOURCEAPPLY.Hz"
 
 /*
 	this class is for doing space-synchronized Yee simulation.
@@ -30,6 +40,13 @@ private:
 	FieldPoint3D *fHy; //fields for yeeHy
 	FieldPoint3D *fHz; //fields for yeeHz
 	//
+	int applySourceToEx;
+	int applySourceToEy;
+	int applySourceToEz;
+	int applySourceToHx;
+	int applySourceToHy;
+	int applySourceToHz;
+	//
 	double ds2; //space shift distance
 	int ret;
 protected:
@@ -40,6 +57,8 @@ public:
 	~YeeFDTDSpaceSynched(void);
 	int formSpaceSynchedFields();
 	//
+	virtual int applySource(FieldSource *source);
+	virtual int applyBoundaryCondition(BoundaryCondition *bc);
 	virtual int PopulateFields(FieldsInitializer *fieldValues);
 	virtual int updateFieldsToMoveForward();
 	virtual void OnFinishSimulation();

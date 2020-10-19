@@ -1,5 +1,5 @@
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -10,6 +10,7 @@
 
 #include "YeeFDTD.h"
 #include "YeeFDTDSpaceSynched.h"
+#include "HighYee.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -30,11 +31,14 @@ YeeFDTD **yeeList = NULL;
 unsigned int yeeCount = 0;
 YeeFDTDSpaceSynched **yeesynchList = NULL;
 unsigned int yeesynchCount = 0;
+HighYee **hiyeeList = NULL;
+unsigned int hiyeeCount = 0;
 
 __declspec (dllexport) void RemovePluginInstances()
 {
 	REMOVEALLPLUGINS(YeeFDTD, yeeCount, yeeList);
 	REMOVEALLPLUGINS(YeeFDTDSpaceSynched, yeesynchCount, yeesynchList);
+	REMOVEALLPLUGINS(HighYee, hiyeeCount, hiyeeList);
 }
 
 __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
@@ -47,6 +51,10 @@ __declspec (dllexport) void* CreatePluginInstance(char *name, double *params)
 	else if(strcmp(name, "YeeFDTDSpaceSynched") == 0)
 	{
 		CREATEPLUGININSTANCE(YeeFDTDSpaceSynched, yeesynchCount, yeesynchList);
+	}
+	if (strcmp(name, "HighYee") == 0)
+	{
+		CREATEPLUGININSTANCE(HighYee, hiyeeCount, hiyeeList);
 	}
 	if(p != NULL)
 	{

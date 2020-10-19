@@ -1,6 +1,6 @@
 
 /*******************************************************************
-	Author:  David Ge (dge893@gmail.com, aka Wei Ge)
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
 	Last modified: 03/31/2018
 	Allrights reserved by David Ge
 
@@ -34,6 +34,14 @@ void YeeFDTDSpaceSynched::cleanup(void)
 int YeeFDTDSpaceSynched::onInitialized(TaskFile *taskParameters)
 {
 	freeFieldMemory(); //initialize(...) allocated memory, we do not need it here
+	//
+	//applySourceToEx = taskParameters->getInt(SourceApplyToEx, true);
+	//applySourceToEy = taskParameters->getInt(SourceApplyToEy, true);
+	//applySourceToEz = taskParameters->getInt(SourceApplyToEz, true);
+	//applySourceToHx = taskParameters->getInt(SourceApplyToHx, true);
+	//applySourceToHy = taskParameters->getInt(SourceApplyToHy, true);
+	//applySourceToHz = taskParameters->getInt(SourceApplyToHz, true);
+	//
 	yeeEx = new YeeFDTD();
 	yeeEy = new YeeFDTD();
 	yeeEz = new YeeFDTD();
@@ -144,7 +152,59 @@ void YeeFDTDSpaceSynched::OnFinishSimulation()
 {
 	
 }
+int YeeFDTDSpaceSynched::applySource(FieldSource *source)
+{
+	int ret = ERR_OK;
+	ret = yeeEx->applySource(source);
+	if (ret == ERR_OK)
+	{
+		ret = yeeEy->applySource(source);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeEz->applySource(source);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHx->applySource(source);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHy->applySource(source);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHz->applySource(source);
+	}
+	return ret;
+}
+int YeeFDTDSpaceSynched::applyBoundaryCondition(BoundaryCondition *bc)
+{
+	int ret = ERR_OK;
+	ret = yeeEx->applyBoundaryCondition(bc);
+	if (ret == ERR_OK)
+	{
+		ret = yeeEy->applyBoundaryCondition(bc);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeEz->applyBoundaryCondition(bc);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHx->applyBoundaryCondition(bc);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHy->applyBoundaryCondition(bc);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = yeeHz->applyBoundaryCondition(bc);
+	}
+	return ret;
 
+}
 int YeeFDTDSpaceSynched::updateFieldsToMoveForward()
 {
 	ret = ERR_OK;
