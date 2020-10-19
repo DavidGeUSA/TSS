@@ -43,12 +43,13 @@ int FieldSourceEz::initialize(double Courant, double timeStep, double spaceStep,
 */
 RadiusHandleType FieldSourceEz::setRadius(int radius)
 {
-	if(radius > 0)
+	//if(radius > 0) //for YEE
+	if (radius > 1) //for TSS
 	{
 		//end applying the source
 		return Finish;
 	}
-	//radius == 0, apply the source
+	//apply the source
 	return NeedProcess;
 }
 
@@ -70,11 +71,19 @@ void FieldSourceEz::handleData(int m, int n, int p)
 		3ddemo.c:
 		Ex((SizeX - 1) / 2, SizeY / 2, SizeZ / 2) += ezInc(Time, 0.0);
 	*/
-	double arg;
-	//arg = M_PI * ((Cdtds * _time - 0.0) / ppw - 1.0);
-	arg = M_PI * ((Cdtds * (double)_timeIndex - 0.0) / ppw - 1.0);
-	arg = arg * arg;
-	//m=n=p=0 is the first element of array _fields
-	_fields[0].E.x += (1.0 - 2.0 * arg) * exp(-arg);   //Schneider uses Ex
-	//_fields[0].E.z += (1.0 - 2.0 * arg) * exp(-arg); //should be Ez? it dosen't matter as long as we keep this in mind
+	//for TSS:(1,0,0), for YEE:(0,0,0)
+	if (m == 1 && n == 0 && p == 0)
+	{
+		double arg;
+		//arg = M_PI * ((Cdtds * _time - 0.0) / ppw - 1.0);
+		arg = M_PI * ((Cdtds * (double)_timeIndex - 0.0) / ppw - 1.0);
+		arg = arg * arg;
+		//m=n=p=0 is the first element of array _fields
+		arg = (1.0 - 2.0 * arg) * exp(-arg);
+		_fields[index].E.x += arg;   //Schneider uses Ex
+		//_fields[index].E.z += (1.0 - 2.0 * arg) * exp(-arg); //should be Ez? it dosen't matter as long as we keep this in mind
+	}
+
+	//
+	index++;
 }
