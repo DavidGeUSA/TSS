@@ -1,5 +1,5 @@
 #pragma once
-#include "C:\Users\dge66\Documents\TSS\EMField\FieldSource.h"
+#include "..\EMField\FieldSource.h"
 class SourceX :
 	public FieldSource
 {
