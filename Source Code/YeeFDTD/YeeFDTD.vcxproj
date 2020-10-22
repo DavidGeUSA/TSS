@@ -127,7 +127,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>MemoryMan.lib;EMField.lib;FileUtil.lib;OutputUtil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>MemoryMan.lib;MathTools.lib;EMField.lib;FileUtil.lib;OutputUtil.lib;ArbitraryOrder.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
