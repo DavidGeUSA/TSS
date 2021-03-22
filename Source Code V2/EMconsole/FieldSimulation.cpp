@@ -1,0 +1,572 @@
+/*******************************************************************
+	Author: David Ge (dge893@gmail.com, aka Wei Ge)
+	Last modified: 03/31/2018
+	Allrights reserved by David Ge
+
+	Modifications
+	Date            Author      Description
+	---------------------------------------------
+	2021-03-06      David Ge    Linux compatibility
+********************************************************************/
+#include "../FileUtil/fileutil.h"
+#include "../EMField/EMField.h"
+#include "../EMField/RadiusIndex.h"
+#include "../TssInSphere/TssInSphere.h"
+#include "../MemoryMan/memman.h"
+#include "../ProcessMonitor/ProcessMonitor.h"
+#include "FieldSimulation.h"
+#include "simConsole.h"
+#include "../TssInSphere/FieldAnalysor.h"
+
+#include <limits.h>
+#include <math.h>
+#define _USE_MATH_DEFINES // for C++  
+#include <cmath>  
+#include <stdio.h>
+#include <float.h>
+#include <signal.h>
+#include <string.h>
+#include "../radius0/radius0.h"
+#include "../FieldProvider0/IV.h"
+#include "../BC0/BC.h"
+#include "../SRC0/SRC0.h"
+#include "../TFSF0/TFSF0.h"
+
+//let user use Ctrl-C to stop simulation
+bool cancel_simulation_flag = false;
+extern "C" void signals_handler(int)
+{
+	puts("\r\n\r\nStopping simulation, please wait ... \r\n");
+	cancel_simulation_flag = true;
+}
+bool OperationCanceled()
+{
+	return cancel_simulation_flag;
+}
+
+void SetupCancelHandler()
+{
+	cancel_simulation_flag = false;
+	signal(SIGINT, &signals_handler);
+}
+/*
+	construct a simulation object
+*/
+FieldSimulation::FieldSimulation()
+{
+	fdtd = NULL;
+	field0 = NULL;
+	source = NULL;
+	boundaryCondition = NULL;
+	tfsf = NULL;
+	seriesIndex = NULL;
+}
+
+FieldSimulation::~FieldSimulation()
+{
+	if(seriesIndex != NULL)
+	{
+		delete seriesIndex;
+	}
+}
+wchar_t *FieldSimulation::GetBaseFilename()
+{
+	return fieldFile;
+}
+bool FieldSimulation::EnabledFDTDtimeRecording()
+{
+	if(fdtd != NULL)
+	{
+		return fdtd->EnabledFDTDtimeRecording();
+	}
+	return false;
+}
+double FieldSimulation::GetAverageFDTDOneStepTime()
+{
+	if(fdtd != NULL)
+	{
+		return fdtd->GetAverageFDTDOneStepTime();
+	}
+	return 0.0;
+}
+double FieldSimulation::GetSumFDTDOneStepTime()
+{
+	if(fdtd != NULL)
+	{
+		return fdtd->GetSumFDTDOneStepTime();
+	}
+	return 0.0;
+}
+/*
+	run EM simulation and record each time step to a data file
+*/
+int FieldSimulation::simulationToFiles(TaskFile *taskConfig, MemoryManager *mem, const char *dataFolder)
+{
+	int ret = ERR_OK;
+	//time statistics---------------
+	size_t timeStepCount;
+	timeUsed = 0;
+	totalTime = 0;
+	averageStepTime = 0.0;
+	timeStepCount = 0;
+	//-------------------------------
+	//---load plugins-------------------
+	fdtd = (FDTD *)CreateRadiusFDTDInstance(taskConfig->getString(TP_SIMFDTD_NAME, true));
+	field0 = (FieldsInitializer *)CreateIVInstance(taskConfig->getString(TP_SIMIV_NAME, true));
+	boundaryCondition = (BoundaryCondition *)CreateBCInstance(taskConfig->getString(TP_SIMBC_NAME, true));
+	source = (FieldSource *)CreateRadiusSourceInstance(taskConfig->getString(TP_SIMFS_NAME, true));
+	tfsf = (TotalFieldScatteredFieldBoundary *)CreateTFSTInstance(taskConfig->getString(TP_SIMTFSF_NAME, true));
+	//----------------------------------
+	if(fdtd == NULL)
+	{
+		ret = ERR_SIM_FDTD;
+	}
+	else if(field0 == NULL)
+	{
+		ret = ERR_SIM_FIELD0;
+	}
+	else if(boundaryCondition == NULL)
+	{
+		ret = ERR_SIM_BOUNDARY;
+	}
+	if(ret == ERR_OK)
+	{
+		fdtd->SetMemoryManager(mem);
+		field0->SetMemoryManager(mem);
+		boundaryCondition->SetMemoryManager(mem);
+		if (source != NULL) source->SetMemoryManager(mem);
+		if (tfsf != NULL) tfsf->SetMemoryManager(mem);
+		N = taskConfig->getInt(TP_FDTDN, false);
+		range = taskConfig->getDouble(TP_FDTDR, false);
+		ret = taskConfig->getErrorCode();
+		if(ret == ERR_OK)
+		{
+			if(N <= 0)
+			{
+				ret = ERR_TP_INVALID_N;
+			}
+			else if(range <= 0.0)
+			{
+				ret = ERR_TP_INVALID_R;
+			}
+		}
+		if(ret == ERR_OK)
+		{
+			maxRadius = GRIDRADIUS(N);
+			minimumStepTime = UINT_MAX;
+			averageStepTime = 0.0;
+			timeStepCount = 0;
+			datapoints = totalPointsInSphere(maxRadius);
+			//
+			puts("\r\nStarting FDTD simulation. Press Ctrl-C to stop. \r\n Initialize and prepare fields at time 0 ...\r\n");
+			startTime = getTimeTick();
+			//
+			cancel_simulation_flag = false;
+			signal(SIGINT, &signals_handler);
+			//
+			//create a index converter for quick accessing fields
+			seriesIndex = new RadiusIndexToSeriesIndex();
+			ret = seriesIndex->initialize(maxRadius);
+			//
+			if(ret == ERR_OK)
+			{
+				boundaryCondition->setIndexCache(seriesIndex);
+				fdtd->setIndexCache(seriesIndex);
+				if(tfsf != NULL)
+				{
+					tfsf->setIndexCache(seriesIndex);
+				}
+				//initialize plug-in objects
+				ret = field0->initialize(taskConfig);
+			}
+			if (ret == ERR_OK)
+			{
+				ret = fdtd->initialize(dataFolder, tfsf, taskConfig);
+				if (ret == ERR_OK)
+				{
+					if (source != NULL)
+					{
+						ret = source->initialize(fdtd->getCourantNumber(), fdtd->GetTimeStepSize(), fdtd->GetSpaceStepSize(), maxRadius, taskConfig);
+					}
+				}
+			}
+			if(ret == ERR_OK)
+			{
+				timeAdvanceOrder = 2 * fdtd->getHalfOrderTimeAdvance();
+				spaceDerivativeOrder = 2 * fdtd->getHalfOrderSpaceDerivate();
+				memorySize = fdtd->GetMemorySize();
+				spaceStepSize = fdtd->GetSpaceStepSize();
+				timeStepSize = fdtd->GetTimeStepSize();
+				//set initial field values
+				ret = fdtd->PopulateFields(field0);
+				if(ret == ERR_OK)
+				{
+					ret = boundaryCondition->initialize(fdtd->getCourantNumber(), maxRadius, taskConfig);
+					if(ret == ERR_OK)
+					{
+						if(tfsf != NULL)
+						{
+							ret = tfsf->initialize(fdtd->getCourantNumber(), maxRadius, taskConfig);
+						}
+					}
+				}
+				else
+				{
+					RememberOSerror();
+				}
+			}
+		}
+	}
+	if(ret == ERR_OK)
+	{
+		FieldAnalysor *fa = NULL;
+		FILE *fhSummary = 0;
+		double avgE = 0.0;
+		double avgH = 0.0;
+		//
+		endTime = getTimeTick(); timeUsed = endTime - startTime;
+#ifdef __linux__ 
+		printf("\r\nInitilization finished in %Ilu ms. Start simulation.\r\n", timeUsed);
+		printf("Space step = %g, time step = %g. Time advance estimation order: %u; curl estimation order:%u.\r\n Number of field points:%Ilu. \r\n",
+					spaceStepSize, timeStepSize, timeAdvanceOrder, spaceDerivativeOrder, datapoints);
+		//
+#elif _WIN32
+		printf("\r\nInitilization finished in %Iu ms. Start simulation.\r\n", timeUsed);
+		printf("Space step = %g, time step = %g. Time advance estimation order: %u; curl estimation order:%u.\r\n Number of field points:%Iu. \r\n",
+			spaceStepSize, timeStepSize, timeAdvanceOrder, spaceDerivativeOrder, datapoints);
+
+#else
+
+#endif
+		if(EnabledFDTDtimeRecording())
+		{
+			fa = new FieldAnalysor(seriesIndex);
+		}
+		//apply field source
+		if (source != NULL)
+		{
+			ret = fdtd->applySource(source);
+		}
+		//apply boundary condition
+		if (ret == ERR_OK)
+		{
+			ret = fdtd->applyBoundaryCondition(boundaryCondition);
+		}
+		//time advance loop
+		while(ret == ERR_OK)
+		{
+			reportProcess(reporter, false, "Current time index %d. Moving forward, please wait ...", fdtd->GetTimeStepIndex());
+			startTime = getTimeTick();
+			//move forward
+			ret = fdtd->moveForward();
+			if(ret == ERR_OK)
+			{
+				//apply field source
+				if (source != NULL)
+				{
+					ret = fdtd->applySource(source);
+				}
+				//apply boundary condition
+				if(ret == ERR_OK)
+				{
+					ret = fdtd->applyBoundaryCondition(boundaryCondition);
+				}
+			}
+			if(ret == ERR_OK)
+			{
+				endTime = getTimeTick(); timeUsed = endTime - startTime;
+				totalTime += timeUsed;
+				if(timeUsed < minimumStepTime) minimumStepTime = timeUsed;
+				timeStepCount++;
+				averageStepTime = (((double)timeStepCount-1.0)/(double)timeStepCount) * averageStepTime + (double)timeUsed / (double)timeStepCount;
+				reportProcess(reporter, true, "Reached time index: %d, time for this step: %d ms. average time:%g", fdtd->GetTimeStepIndex(), timeUsed, averageStepTime);
+				if(fa != NULL)
+				{
+					int radiusToCount = maxRadius - (int)fdtd->GetTimeStepIndex() - 2; //the maximum radius to calculate the divergence, excluding the boudary
+					if (radiusToCount <= 0)
+					{
+						radiusToCount = maxRadius;//the boudary error has reached the center, no more excluding the boundary
+					}
+					ret = fa->setFields(fdtd->GetFieldMemory(), radiusToCount, fdtd->GetSpaceStepSize(), fdtd->getHalfOrderSpaceDerivate());
+					if(ret == ERR_OK)
+					{
+						ret = fa->execute();
+						if(ret == ERR_OK)
+						{
+							avgE += fa->getAverageDivergenceE();
+							avgH += fa->getAverageDivergenceH();
+						}
+					}
+				}
+				if(ret == ERR_OK)
+				{
+					if(cancel_simulation_flag) //user terminates simulation
+					{
+						ret = ERR_SIMULATION_CANCEL;
+					}
+					else
+					{
+						if(fdtd->ReachedMaximumTime())
+						{
+							fdtd->FinishSimulation();
+							ret = ERR_REACHED_TIME_LIMIT;
+						}
+					}
+				}
+			}
+		}
+		if (ret == ERR_OK || ret == ERR_REACHED_TIME_LIMIT)
+		{
+			if (EnabledFDTDtimeRecording())
+			{
+				//create a summary and append it to a file.
+				char baseFile[FILENAME_MAX];
+				char sumFile[FILENAME_MAX];
+				ret = fdtd->GetTemporaryFolder(sumFile, FILENAME_MAX);
+				if (ret == ERR_OK)
+				{
+					ret = formFilePath(baseFile, FILENAME_MAX, sumFile, "EMsummary");
+					if (ret == ERR_OK)
+					{
+#ifdef __linux__
+						ret = snprintf(sumFile, FILENAME_MAX, "%s%Ilu.txt", baseFile, fdtd->getMaximumTimeIndex());
+#elif _WIN32
+						ret = sprintf_s(sumFile, FILENAME_MAX, "%s%Iu.txt", baseFile, fdtd->getMaximumTimeIndex());
+#else
+#endif
+						
+					}
+				}
+				if (ret == ERR_OK)
+				{
+					ret = openTextfileAppend(sumFile, &fhSummary);
+					if (fhSummary != 0)
+					{
+						//append report
+						//{average divergence magnitude},{time used},{FDTD class name}, order ({time order}, {space order}), N={N}
+						char msg[500];
+						avgE = avgE / (double)fdtd->GetTimeStepIndex();
+						avgH = avgH / (double)fdtd->GetTimeStepIndex();
+						avgE = sqrt(avgE*avgE + avgH*avgH);
+#ifdef __linux__
+						ret = snprintf(msg, 500, "%g,%g,%s(%u,%u)N%d\r\n", avgE, fdtd->GetSumFDTDOneStepTime(), fdtd->getClassName(), timeAdvanceOrder, spaceDerivativeOrder, N);
+#elif _WIN32
+						ret = sprintf_s(msg, 500, "%g,%g,%s(%u,%u)N%d\r\n", avgE, fdtd->GetSumFDTDOneStepTime(), fdtd->getClassName(), timeAdvanceOrder, spaceDerivativeOrder, N);
+#else
+#endif
+						
+						if (ret == ERR_OK)
+						{
+							ret = writefile(fhSummary, msg, (unsigned int)strlen(msg));
+						}
+						closefile(fhSummary);
+
+						printf("\r\nAverage FDTD step time:%g, total FDTD time:%g\r\n", GetAverageFDTDOneStepTime(), GetSumFDTDOneStepTime());
+					}
+				}
+			}
+		}
+		if(fa != NULL)
+		{
+			free(fa);
+		}
+#ifdef __linux__ 
+		printf("\r\nTotal time used:%Ilu\r\n", totalTime);
+#elif _WIN32
+		printf("\r\nTotal time used:%Iu\r\n", totalTime);
+#else
+
+#endif
+	}
+	return ret;
+}
+
+/*
+	create a report file for each data file.
+
+	filenamebase: data file names will be formed by {filenamebase}{n}.em, where {n} = 0,1,2,...
+	halfOrderDivergenceEstimate: half of the divergence estimation
+*/
+int FieldSimulation::createStatisticsFiles(TaskFile *taskConfig, const char *dataFolder)
+{
+	int ret = ERR_OK;
+	int k;
+	char filenamebase[FILENAME_MAX];
+	int halfOrder;
+	char fieldFile[FILENAME_MAX];
+	char reportFile[FILENAME_MAX];
+	FieldPoint3D *fields = NULL;
+	size_t fsize;
+	unsigned int simulationRadius;
+	double ds;
+	FILE *divergReportFileHandle = 0;
+	char *basefile = taskConfig->getString(TP_SIMBASENAME, false);
+	range = taskConfig->getDouble(TP_FDTDR, false);
+	halfOrder = taskConfig->getInt(TP_HALF_ORDER_SPACE, true);
+	ret = taskConfig->getErrorCode();
+	if(ret == ERR_OK)
+	{
+		if(range <= 0.0)
+		{
+			ret = ERR_TP_INVALID_R;
+		}
+		else if(strlen(basefile)==0)
+		{
+			ret = ERR_TP_BASENAME;
+		}
+		else if(strlen(dataFolder) == 0)
+		{
+			ret = ERR_CMD_DATAFOLDER;
+		}
+		else
+		{
+			char *subFolder = taskConfig->getString(TP_SIMDATAFOLDER, false);
+			ret = taskConfig->getErrorCode();
+			if (ret == ERR_OK)
+			{
+				char dataPath[FILENAME_MAX];
+				ret = formFilePath(dataPath, FILENAME_MAX, dataFolder, subFolder);
+				if (ret == ERR_OK)
+				{
+					if (strcmp(basefile, "DEF") == 0)
+					{
+						char bfn[FILENAME_MAX];
+						char * fdtdName = taskConfig->getString(TP_SIMFDTD_NAME, false);
+						unsigned halfTimeOrder = taskConfig->getUInt(TP_HALF_ORDER_TIME, false);
+						unsigned halfSpaceOrder = taskConfig->getUInt(TP_HALF_ORDER_SPACE, false);
+						N = taskConfig->getUInt(TP_FDTDN, false);
+						ret = taskConfig->getErrorCode();
+						if (ret == ERR_OK)
+						{
+							ret = FDTD::formBaseDataFileName(bfn, fdtdName, N, range, 2 * halfTimeOrder, 2 * halfSpaceOrder);
+							if (ret == ERR_OK)
+							{
+								ret = formFilePath(filenamebase, FILENAME_MAX, dataPath, bfn);
+							}
+						}
+					}
+					else
+					{
+						ret = formFilePath(filenamebase, FILENAME_MAX, dataPath, basefile);
+					}
+				}
+			}
+		}
+	}
+	if(ret == ERR_OK)
+	{
+		//create a binary report file handle
+		char rptFile[FILENAME_MAX];
+#ifdef __linux__
+		ret = snprintf(rptFile, FILENAME_MAX, "%sradiusError.dat", filenamebase);
+#elif _WIN32
+		ret = sprintf_s(rptFile, FILENAME_MAX, "%sradiusError.dat", filenamebase);
+#else
+#endif
+		
+		if(ret == ERR_OK)
+		{
+			ret = openfileWrite(rptFile,&divergReportFileHandle);
+		}
+	}
+	if(ret == ERR_OK)
+	{
+		FieldAnalysor fa(NULL);
+		if(halfOrder < 1) halfOrder = 1;
+		k = 0;
+		puts("Creating report files. File number: ");
+		while(ret == ERR_OK)
+		{
+			//load fields from file
+			ret = formDataFileName(fieldFile, FILENAME_MAX, filenamebase, k);
+			if(ret != ERR_OK)
+			{
+				ret = ERR_MEM_EINVAL;
+				break;
+			}
+			if(fileexists(fieldFile))
+			{
+				ret = sprintf_1(reportFile, FILENAME_MAX, "%s%d.em.txt", filenamebase, k)<=0?ERR_STR_PRF:ERR_OK;
+				if(ret != ERR_OK)
+				{
+					break;
+				}
+				ret = CreateReportFile(reportFile); //create a text file handle for the report file
+				if(ret != ERR_OK)
+				{
+					break;
+				}
+			}
+			else
+			{
+				break;
+			}
+			printf("%d ",k);
+			//calculate simulation region
+			fields = (FieldPoint3D *) ReadFileIntoMemory(fieldFile, &fsize, &ret);
+			if( ret == ERR_OK)
+			{
+				if(fields == NULL)
+				{
+					ret = ERR_OUTOFMEMORY;
+				}
+				else
+				{
+					ret = MemorySizeToRadius(fsize, &simulationRadius);
+					if(ret == ERR_OK)
+					{
+						if(k == 0) //the first file, create indexing cache
+						{
+							if( simulationRadius > 1 && ((simulationRadius-1) % 2) == 0)
+							{
+								ret = writefile(divergReportFileHandle, &simulationRadius, sizeof(simulationRadius));
+								if(ret == ERR_OK)
+								{
+									maxRadius = simulationRadius;
+									N = (maxRadius - 1) / 2;
+									ds = SPACESTEP(range, N);
+									//create indexing cache
+									seriesIndex = new RadiusIndexToSeriesIndex();
+									seriesIndex->initialize(maxRadius);
+									fa.setIndexCache(seriesIndex);
+								}
+							}
+							else
+							{
+								ret = ERR_INVALID_SIZE;
+							}
+						}
+						else if(simulationRadius != (unsigned int)maxRadius)
+						{
+							ret = ERR_FILESIZE_MISMATCH;
+						}
+						if(ret == ERR_OK)
+						{
+							ret = fa.setFields(fields, simulationRadius, ds, halfOrder);
+						}
+						if(ret == ERR_OK)
+						{
+							ret = fa.execute();
+							if(ret == ERR_OK)
+							{
+								ret = fa.WriteDivegenceToFile(divergReportFileHandle);
+								if(ret == ERR_OK)
+								{
+									fa.ShowReport(writeReport); //write to report file
+								}
+							}
+						}
+						fa.cleanup();
+					}
+					FreeMemory(fields);
+				}
+			}
+			CloseReportFile();
+			k++;
+		}
+		closefile(divergReportFileHandle);
+	}
+	return ret;
+}
+
+//
