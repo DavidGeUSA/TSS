@@ -1,0 +1,68 @@
+
+
+//material properties
+TSS.IS_VACUUM=True
+
+//maximum time steps
+SIM.MAXTIMES=120
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=0
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+//plugins -------------------------
+TSS.TIME.CLASS=TimeTssMultiThreads
+SIM.USETHREADS=4
+
+TSS.SOURCE.CLASS=FieldSourceTss
+
+TSS.BOUNDARY.CLASS=BoundaryTss
+
+TSS.FIELDSETTER.CLASS=GaussianCurl
+GAUSSIAN.MAGNITUDE=120
+GAUSSIAN.EXPO=0.5
+//----------------------------------
+
+//for task 301 - test space module
+//use -1999 to test several cases
+//SIM.TESTCASE=-120
+//SIM.TESTCASE=-201
+SIM.TESTCASE=-1999
+//SIM.TESTCASE=3
+
+TEST.EXCLUDE.BOUNDARY=true
+
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified  by command line parameter /D
+TSS.DATAFOLDER=unitTest
+
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+
+//computation domain --------------
+TSS.NX=42
+TSS.NY=42
+TSS.NZ=42
+TSS.XMIN=-1
+TSS.YMIN=-1
+TSS.ZMIN=-1
+
+//space step size, use -XMIN/(NX/2)
+TSS.DS=0.047619047619047619
+//--------------------------------
+
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=unitTest
+

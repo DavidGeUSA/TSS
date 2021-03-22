@@ -1,0 +1,81 @@
+//Ricker source, PEMC boundary conditions, PML absorb layers
+
+//material properties--------------------
+TSS.IS_VACUUM=True
+
+//simulation ----------------------------------
+
+//maximum time steps
+SIM.MAXTIMES=1200
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=10
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+//plugins -------------------------
+TSS.TIME.CLASS=TimeTssMultiThreads
+SIM.USETHREADS=4
+
+TSS.SOURCE.CLASS=RickerSource
+FS.PPW=15
+
+TSS.BOUNDARY.CLASS=BoundaryTss
+//TSS.BOUNDARY.CLASS=BoundaryTssVoid
+
+TSS.FIELDSETTER.CLASS=FieldsNull
+//----------------------------------
+
+//folders and files
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified  by command line parameter /D
+TSS.DATAFOLDER=R21_84_PEMC_PML0_01
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=R21_84_PEMC_PML0_01
+
+//computation domain --------------
+TSS.NX=84
+TSS.NY=84
+TSS.NZ=84
+TSS.XMIN=-1
+TSS.YMIN=-1
+TSS.ZMIN=-1
+
+//space step size 1/21
+TSS.DS=0.02
+
+//time step size
+TSS.DT=3.8e-11
+//--------------------------------
+
+//estimation orders
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+//---------------------------------
+//use RAM instead of hard disk
+SIM.USE_RAM=true
+
+//PML
+PML.DISABLE=false
+PML.THICK=4
+PML.ALPHA=0.01
+PML.BETA=0.01
+PML.X.LOW=true
+PML.X.HIGH=true
+PML.Y.LOW=true
+PML.Y.HIGH=true
+PML.Z.LOW=true
+PML.Z.HIGH=true
+PML.POWER=3
+

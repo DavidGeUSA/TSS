@@ -1,0 +1,111 @@
+
+//material properties--------------------
+TSS.RHO=0
+TSS.IS_VACUUM=True
+TSS.EPS=
+TSS.MU=
+TSS.SIGMA_E=0
+TSS.SIGMA_M=0
+
+//simulation ----------------------------------
+
+//maximum time steps
+SIM.MAXTIMES=1200000
+SIM.STARTTIME=600000
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=2000
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+//the number of threads to be used. default is 1
+SIM.USETHREADS=4
+
+//plugins -------------------------
+TSS.SIMULATE.CLASS=TssSim
+
+//default is TimeTss
+//TSS.TIME.CLASS=TimeTss2Threads
+TSS.TIME.CLASS=TimeTssMultiThreads
+
+//TSS.STATISTICS.CLASS=DivergenceStatisticHeilder
+
+TSS.SOURCE.CLASS=HeidlerCurrent
+
+TSS.BOUNDARY.CLASS=BoundaryTss
+
+TSS.FIELDSETTER.CLASS=FieldsNull
+//----------------------------------
+
+//folders and files
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified by command line parameter /D
+TSS.DATAFOLDER=LG2
+
+//use RAM instead of hard disk
+SIM.USE_RAM=true
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=L1
+
+//computation domain --------------
+//x,y range: 12000, z range: 60000
+//NX,NY=Xrang/DS, NZ=Zrange/DS
+//XMIN=-Xrang/2, YMIN=-Yrang/2
+//make NX and NY even numbers so that (i=NX/2,j=NY/2)->(x=0,y=0)
+//field memory size = (NX+1)*(NY+1)*(NZ+1)*sizeof(double)*3*2
+
+//use factor 1000: x,y range: 6, z range: 15
+//NX,NY,NZ=range/DS
+//XMIN=-Xrang/2, YMIN=-Yrang/2
+TSS.SPACE_FACTOR=1000
+
+TSS.NX=120
+TSS.NY=120
+TSS.NZ=300
+TSS.XMIN=-3
+TSS.YMIN=-3
+TSS.ZMIN=0
+
+//space step size
+TSS.DS=0.05
+
+//time step size
+TSS.DT=4e-11
+
+//TSS.COURANT_FACTOR=0.00025
+//--------------------------------
+
+//for task 370------------------------------------------------------------------
+//from all the data files generate a file containing E and H at following point
+//i=NX/2, j=NY/2, k*DS
+//POINT.GRIDNODES=(120,120,10),(120,120,20),(120,120,100)
+//POINT.GRIDNODES=(120,120,12),(120,120,14),(120,120,16),(120,120,18)
+//POINT.GRIDNODES=(60,60,10),(60,60,60),(60,60,200),(60,60,300),(60,60,400),(60,60,500)
+//POINT.GRIDNODES=(60,60,20),(60,60,30),(60,60,40),(60,60,50)
+//POINT.GRIDNODES=(60,60,12),(60,60,14),(60,60,16),(60,60,18)
+POINT.GRIDNODES=(60,60,2),(60,60,4),(60,60,6),(60,60,8),(60,60,10),(60,60,12),(60,60,14),(60,60,16),(60,60,18),(60,60,20),(60,60,60),(60,60,100),(60,60,200),(60,60,300)
+//POINT.GRIDNODES=(60,60,4),(60,60,8),(60,60,12),(60,60,16),(60,60,20),(60,60,24),(60,60,28),(60,60,32),(60,60,36),(60,60,40),(60,60,44),(60,60,48)
+//POINT.GRIDNODES=(60,90,4),(60,90,8),(60,90,12),(60,90,16),(60,90,20),(60,90,24),(60,90,28),(60,90,32),(60,90,36),(60,90,100),(60,60,200),(60,60,400)
+//POINT.GRIDNODES=(120,120,4),(120,120,8),(120,120,12),(120,120,16),(120,120,20),(120,120,24),(120,120,28),(120,120,32),(120,120,36),(120,120,40),(120,120,120),(120,120,200),(120,120,200),(120,120,600),(120,120,800),(120,120,1000),(120,120,1200)
+//"e" for collecting Ex, Ey and Ez;"h" for collecting Hx, Hy and Hz
+POINT.EH=e
+//1 for x, 2 for y, 3 for z
+FIELD.COMPONENT=3
+//------------------------------------------------------------------------------
+
+//estimation orders
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+//---------------------------------
+

@@ -1,0 +1,71 @@
+//set initial E-field to Gaussian function
+//run Yee algorithm
+
+//material properties
+TSS.IS_VACUUM=True
+
+//maximum time steps
+SIM.MAXTIMES=120
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=2
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+
+//plugins -------------------------
+TSS.TIME.CLASS=TimeYee
+
+TSS.SOURCE.CLASS=FieldSourceTss
+
+TSS.BOUNDARY.CLASS=BoundaryTssVoid
+
+TSS.FIELDSETTER.CLASS=GaussianCurlYee
+GAUSSIAN.MAGNITUDE=120
+GAUSSIAN.EXPO=0.5
+//----------------------------------
+
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified  by command line parameter /D
+TSS.DATAFOLDER=G_YEE
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=G_YEE
+
+//computation domain --------------
+TSS.NX=240
+TSS.NY=240
+TSS.NZ=240
+//XMIN = -DS*(NX/2)
+TSS.XMIN=-1.8
+TSS.YMIN=-1.8
+TSS.ZMIN=-1.8
+//--------------------------------
+//space step size -XMIN/(NX/2)
+TSS.DS=0.015
+
+//time step size
+TSS.DT=2.4e-11
+
+//PML
+PML.DISABLE=true
+
+//for task 370------------------------------------------------------------------
+//from all the data files generate a file containing E and H at following point
+POINT.GRIDNODES=(120,120,120),(140,140,140),(160,160,160)
+//"e" for collecting Ex, Ey and Ez;"h" for collecting Hx, Hy and Hz
+POINT.EH=e
+//1 for x, 2 for y, 3 for z
+FIELD.COMPONENT=1
+//------------------------------------------------------------------------------
+
+
+

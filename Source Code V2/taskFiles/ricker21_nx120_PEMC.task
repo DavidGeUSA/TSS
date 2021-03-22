@@ -1,0 +1,69 @@
+
+//material properties--------------------
+TSS.IS_VACUUM=True
+
+//simulation ----------------------------------
+
+//maximum time steps
+SIM.MAXTIMES=600
+SIM.STARTTIME=0
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=10
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+//plugins -------------------------
+
+TSS.TIME.CLASS=TimeTssMultiThreads
+//the number of threads to be used.
+SIM.USETHREADS=4
+
+TSS.SOURCE.CLASS=RickerSource
+FS.PPW=15
+
+//use PEMC
+TSS.BOUNDARY.CLASS=BoundaryTss
+
+//initial fields = 0
+TSS.FIELDSETTER.CLASS=FieldsNull
+//----------------------------------
+
+//folders and files
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified  by command line parameter /D
+TSS.DATAFOLDER=R21PEMC
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=R21PEMC
+
+//computation domain --------------
+TSS.NX=120
+TSS.NY=120
+TSS.NZ=120
+//XMIN = -DS*(NX/2)
+TSS.XMIN=-0.42
+TSS.YMIN=-0.42
+TSS.ZMIN=-0.42
+
+//space step size -XMIN/(NX/2)
+TSS.DS=0.007
+//--------------------------------
+
+//estimation orders
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+//---------------------------------
+
+//use RAM instead of hard disk
+SIM.USE_RAM=true

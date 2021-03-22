@@ -1,0 +1,82 @@
+//set initial E-field to Gaussian function
+
+//material properties
+TSS.IS_VACUUM=True
+
+//maximum time steps
+SIM.MAXTIMES=60
+
+//time steps before saving fields to files
+TSS.REC_INTERVAL=1
+
+//generate a statistics file on finishing the simulation
+TSS.MAKESTATISTICS=true
+
+
+//plugins -------------------------
+//TSS.TIME.CLASS=TimeTssMultiThreads
+//SIM.USETHREADS=4
+
+//use single thread
+TSS.TIME.CLASS=TimeTss
+
+TSS.SOURCE.CLASS=FieldSourceTss
+
+//TSS.BOUNDARY.CLASS=BoundaryTssVoid
+
+//use PEMC
+TSS.BOUNDARY.CLASS=BoundaryTss
+
+TSS.FIELDSETTER.CLASS=GaussianCurl
+GAUSSIAN.MAGNITUDE=120
+GAUSSIAN.EXPO=0.5
+//----------------------------------
+
+//subfolder under /D for read/write space matrix file
+TSS.MATRIXFILEFOLDER=Matrix
+
+TSS.TIMEMATRIXFILE=timeMatrix.txt
+TSS.SPACEMATRIXFILE=spacematrix.txt
+
+//sub folder under folder specified  by command line parameter /D
+TSS.DATAFOLDER=G_TSS
+
+//forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
+//forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
+//<file index>=0,1,2,...
+TSS.REC_BASEFILE=G_TSS
+
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+
+//computation domain --------------
+TSS.NX=120
+TSS.NY=120
+TSS.NZ=120
+//XMIN = -DS*(NX/2)
+TSS.XMIN=-1.8
+TSS.YMIN=-1.8
+TSS.ZMIN=-1.8
+//--------------------------------
+//space step size -XMIN/(NX/2)
+TSS.DS=0.03
+
+//time step size
+TSS.DT=4.8e-11
+
+//use RAM instead of hard disk
+SIM.USE_RAM=true
+
+//PML
+PML.DISABLE=true
+
+//for task 370------------------------------------------------------------------
+//from all the data files generate a file containing E and H at following point
+POINT.GRIDNODES=(60,60,60),(70,70,70),(80,80,80)
+//"e" for collecting Ex, Ey and Ez;"h" for collecting Hx, Hy and Hz
+POINT.EH=e
+//1 for x, 2 for y, 3 for z
+FIELD.COMPONENT=1
+//------------------------------------------------------------------------------
