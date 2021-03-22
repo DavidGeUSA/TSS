@@ -1,1 +1,7 @@
  
+This version of the FDTD code includes following major changes.
+1. The code works for Windows and for Linux. See https://github.com/DavidGeUSA/TSS/blob/master/TSS_Linux_Windows.pdf
+2. Added new sets of modules which use cubic indexing: for(i=0;i<=nx;i++){for(j=0;j<=ny;j++){for(k=0;k<=nz;k++){...}}} 
+3. Added Perfect Electromegnatic Conductor boundary conditions
+4. Added Perfect Match Layer 
+5. Added multi-threading
