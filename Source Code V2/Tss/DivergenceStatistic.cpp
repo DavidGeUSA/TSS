@@ -61,7 +61,7 @@ size_t DivergenceStatistic::calculate(Point3Dstruct *efile, Point3Dstruct *hfile
 				{
 					bDiv = src->isInSource(i, j, k);
 				}
-				if (bDiv)
+				if (!bDiv)
 				{
 					divg = abs(space->dx_Fx(efile, 1, i, j, k) + space->dy_Fy(efile, 1, i, j, k) + space->dz_Fz(efile, 1, i, j, k));
 					//divg = abs(c1.Divergence(efile, i, j, k, w));
