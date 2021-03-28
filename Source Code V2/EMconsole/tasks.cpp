@@ -1654,5 +1654,11 @@ int task372_makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *d
 	return makeStatisticsFile(mem, taskConfig, dataFolder, reporter);
 }
 
+int task373_combineCSVFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter)
+{
+	return combineCsvFiles(mem, taskConfig, dataFolder, reporter);
+}
+
+
 
 

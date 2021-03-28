@@ -8,6 +8,7 @@
 	Date            Author      Description
 	---------------------------------------------
 	2021-03-06      David Ge    Linux compatibility
+	2021-03-27		David Ge	Add a task to combine output CSV files for different time steps into one file
 ********************************************************************/
 
 #include "simConsole.h"
@@ -41,6 +42,7 @@
 #define TASK_POINT_TIME_FILE      370
 #define TASK_POINT_TIME_BIN_FILES 371
 #define TASK_MAKE_STATISTICS_FILE 372
+#define TASK_COMBINE_CSV_FILES    373
 
 /*
 	task definitions.
@@ -75,6 +77,7 @@ TaskInfo tasks[] = {
 	 ,{TASK_POINT_TIME_BIN_FILES,true,  false, "from a set of simulation data files (*e_*.dat files or *h_*.dat files), generate one bin file, the file contains a 2D array of values, each row for one space location, each column for one time, each value is a field value of Ex,Ey,Ez,Hx,Hy, or Hz. It requires command line parameters \"/W\", \"/D\". Use the same task file doing the simulation for this task. Use task parameters \"POINT.GRIDNODES=(i,j,k),(i,j,k)...\", \"POINT.EH=e|h\" to specify space locations i, j, and k, and for E-field or for H-field, use \"FIELD.COMPONENT\" to specify field component, 1 for x, 2 for y and 3 for z. " }
 	 ,{TASK_MAKE_STATISTICS_FILE,true,  false, "from a set of simulation data files (*e_*.dat files and *h_*.dat files), generate one text file, the file contains field energy and divergences summarized at each time. It requires command line parameters \"/W\", \"/D\". Use the same task file doing the simulation for this task. " }
 	 ,{TASK_COEFFICIENTS_ONLY,   true,  false, "generate coefficients without starting simulation. use a task file to specofy all required parameters. It requires command line parameters \"/W\" and \"/D\"," }
+	 ,{TASK_COMBINE_CSV_FILES,   true,  false, "combine the CSV output files for different time steps into one file. use the same task file for the simulations generating the CSV output files. use \"SIM.ENDTIMESTEPS=t1,t2,...\" to specify the the end-time-step for each CSV file. It requires command line parameters \"/W\" and \"/D\"," }
 };
 
 //

@@ -295,6 +295,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
+				printf("\r\nWork folder does not exist: %s\r\n", workfolder);
 				ret = ERR_MEM_DIR_NOTEXIST;
 			}
 		}
@@ -494,6 +495,9 @@ int main(int argc, char* argv[])
 				case TASK_MAKE_STATISTICS_FILE:
 					ret = task372_makeStatisticsFile(_mem, taskfile, dataFolder, showProgressReport);
 					break;
+				case TASK_COMBINE_CSV_FILES:
+					ret = task373_combineCSVFiles(_mem, taskfile, dataFolder, showProgressReport);
+					break;
 				default:
 					ret = ERR_SIM_TASK_NOCODE;
 					break;
@@ -607,422 +611,429 @@ void showHelp(bool showTaskDefs)
 void showError(const char *msg, int err)
 {
 	puts("\r\n"); puts(msg); puts("\r\n");
-	switch (err)
+	if (err >= ERR_CODE_EXCEPT_START && err < ERR_CODE_EXCEPT_LAST)
 	{
-	case ERR_OUTOFMEMORY://    1
-		printf("Out of memory (EM field). (error=%d)",err);
-		break;
-	case ERR_NOTINITIALIZED:// 2
-		printf("FDTD not initialize. (error=%d)",err);
-		break;
-	case ERR_INVALID_SIZE://   3
-		printf("Invalid Geometry size for FDTD. (error=%d)",err);
-		break;
-	case ERR_INVALID_TIME_ARRAY_SIZE:// 4
-		printf("Invalid FDTD time array size. (error=%d)",err);
-		break;
-	case ERR_INVALID_INIT://   5
-		printf("Invalid FDTD initialization. (error=%d)",err);
-		break;
-	case ERR_INVALID_CALL://   6
-		printf("Inalid FDTD estimation algorithm. Must be second order or fourth order. (error=%d)",err);
-		break;
-	case ERR_INVALID_RADIUS_INDEX: // 7
-		printf("Invalid one-dimension array index (too big) for a given radius. (error=%d)",err);
-		break;
-	case ERR_INVALID_INDEX_RADIUS: //8
-		printf("Invalid three-dimension array indexes for a given radius. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_UNUSED: //  9
-		printf("There is an unused radius index for a given radius. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_TOOMANY: //    10
-		printf("Too many three-dimension array indexes for a given radius. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_MISMATCH: //   11
-		printf("Conversion mismatch. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_TOOLITTLE: //  12
-		printf("Not all points used. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_DUPLICATE: //  13
-		printf("Duplicated array indexes. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_NOTSPHERE: //  14
-		printf("array indexes not on sphere. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_NEGATIVE: //   15
-		printf("Radius index cannot be negative. (error=%d)",err);
-		break;
-	case ERR_SPHERE_COUNT_MISMATCH: //   16
-		printf("Total number of points for a sphere mismatch a sum of points at each radius. (error=%d)",err);
-		break;
-	case ERR_NO_FIELD_SOURCE: //  17
-		printf("Field source not specified. (error=%d)",err);
-		break;
-	case ERR_GEOMETRY_TOO_BIG:  //18
-		printf("Field geometry size too big. (error=%d)",err);
-		break;
-	case ERR_RADIUS_3DINDEX_TOO_BIG:  //19
-		printf("Error converting to series indexing to 3D radius indexes, converted indexes are too big. (error=%d)",err);
-		break;
-	case ERR_RADIUS_3DINDEXTOOSMALL:  //20
-		printf("Error converting to series indexing to 3D radius indexes, converted indexes are too small. (error=%d)",err);
-		break;
-	case ERR_RADIUS_OUTOFSPHERE:       //21
-		printf("A simulation reaches the maximum allowed radius. (error=%d)",err);
-		break;
-	case ERR_SIMULATION_CANCEL:       //22
-		printf("A simulation is canceled . (error=%d)",err);
-		break;
-	case ERR_REACHED_TIME_LIMIT:     //23
-		printf("A simulation has reached the maximum time. (error=%d)",err);
-		break;
-	case ERR_INVALID_ESTIMATE_ORDER:  //24
-		printf("Estimation order cannot be 0 or negative. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_NOT_END:    //25
-		printf("Not all points in a sphere are used. (error=%d)",err);
-		break;
-	case ERR_RADIUS_INDEX_CACHE:      //26
-		printf("Indexing cache not given. You need to execute function setIndexCache(...) before calling initialize(...) and other functions. (error=%d)",err);
-		break;
-	case ERR_RADIUS_HANDLE_DATA:      //27
-		printf("logic error in handleData(...). (error=%d)",err);
-		break;
-	case ERR_INVALID_DATA_FOLDER:     //28
-		printf("data folder does not exist. (error=%d)",err);
-		break;
-	case ERR_STRINGFORM_FAILED:       //29
-		printf("formatting string failed. (error=%d)", err);
-		break;
-	case ERR_INVALID_EPS_MU:          //30
-		printf("eps and mu cannot be less than or equal to 0. (error=%d)", err);
-		break;
-	case ERR_INVALID_DOMAIN:          //31
-		printf("computing domain cannot be 0. (error=%d)", err);
-		break;
-	case ERR_INVALID_SPACE_STEP:      //32
-		printf("space step ds cannot be less than or equal to 0. (error=%d)", err);
-		break;
-	//
-	case ERR_CMD_COMMANDLINE:       //100
-		printf("Invalid command line. Cannot interpret the command line syntax (error=%d)",err);
-		break;
-	case ERR_CMD_TASKFILE:          //101
-		printf("Missing task file (/T parameter) (error=%d)", err);
-		break;
-	case ERR_CMD_LIBFOLDER:        //102
-		printf("Missing dynamic-link-library folder (/L parameter) (error=%d)", err);
-		break;
-	case ERR_CMD_WORKFOLDER:       //103
-		printf("Missing work folder (/W parameter) (error=%d)", err);
-		break;
-	case ERR_CMD_DATAFOLDER:       //104
-		printf("Missing data folder (/D parameter) (error=%d)", err);
-		break;
-	case ERR_CMD_DATAFOLDER2:      //105
-		printf("Missing second data folder (/D parameter) (error=%d)", err);
-		break;
-	case ERR_SIM_TASK_NOCODE:     //106
-		printf("Task code not programmed (error=%d)", err);
-		break;
+		printf("Unhandled exception. (error=%d)", err);
+	}
+	else
+	{
+		switch (err)
+		{
+		case ERR_OUTOFMEMORY://    1
+			printf("Out of memory (EM field). (error=%d)", err);
+			break;
+		case ERR_NOTINITIALIZED:// 2
+			printf("FDTD not initialize. (error=%d)", err);
+			break;
+		case ERR_INVALID_SIZE://   3
+			printf("Invalid Geometry size for FDTD. (error=%d)", err);
+			break;
+		case ERR_INVALID_TIME_ARRAY_SIZE:// 4
+			printf("Invalid FDTD time array size. (error=%d)", err);
+			break;
+		case ERR_INVALID_INIT://   5
+			printf("Invalid FDTD initialization. (error=%d)", err);
+			break;
+		case ERR_INVALID_CALL://   6
+			printf("Inalid FDTD estimation algorithm. Must be second order or fourth order. (error=%d)", err);
+			break;
+		case ERR_INVALID_RADIUS_INDEX: // 7
+			printf("Invalid one-dimension array index (too big) for a given radius. (error=%d)", err);
+			break;
+		case ERR_INVALID_INDEX_RADIUS: //8
+			printf("Invalid three-dimension array indexes for a given radius. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_UNUSED: //  9
+			printf("There is an unused radius index for a given radius. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_TOOMANY: //    10
+			printf("Too many three-dimension array indexes for a given radius. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_MISMATCH: //   11
+			printf("Conversion mismatch. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_TOOLITTLE: //  12
+			printf("Not all points used. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_DUPLICATE: //  13
+			printf("Duplicated array indexes. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_NOTSPHERE: //  14
+			printf("array indexes not on sphere. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_NEGATIVE: //   15
+			printf("Radius index cannot be negative. (error=%d)", err);
+			break;
+		case ERR_SPHERE_COUNT_MISMATCH: //   16
+			printf("Total number of points for a sphere mismatch a sum of points at each radius. (error=%d)", err);
+			break;
+		case ERR_NO_FIELD_SOURCE: //  17
+			printf("Field source not specified. (error=%d)", err);
+			break;
+		case ERR_GEOMETRY_TOO_BIG:  //18
+			printf("Field geometry size too big. (error=%d)", err);
+			break;
+		case ERR_RADIUS_3DINDEX_TOO_BIG:  //19
+			printf("Error converting to series indexing to 3D radius indexes, converted indexes are too big. (error=%d)", err);
+			break;
+		case ERR_RADIUS_3DINDEXTOOSMALL:  //20
+			printf("Error converting to series indexing to 3D radius indexes, converted indexes are too small. (error=%d)", err);
+			break;
+		case ERR_RADIUS_OUTOFSPHERE:       //21
+			printf("A simulation reaches the maximum allowed radius. (error=%d)", err);
+			break;
+		case ERR_SIMULATION_CANCEL:       //22
+			printf("A simulation is canceled . (error=%d)", err);
+			break;
+		case ERR_REACHED_TIME_LIMIT:     //23
+			printf("A simulation has reached the maximum time. (error=%d)", err);
+			break;
+		case ERR_INVALID_ESTIMATE_ORDER:  //24
+			printf("Estimation order cannot be 0 or negative. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_NOT_END:    //25
+			printf("Not all points in a sphere are used. (error=%d)", err);
+			break;
+		case ERR_RADIUS_INDEX_CACHE:      //26
+			printf("Indexing cache not given. You need to execute function setIndexCache(...) before calling initialize(...) and other functions. (error=%d)", err);
+			break;
+		case ERR_RADIUS_HANDLE_DATA:      //27
+			printf("logic error in handleData(...). (error=%d)", err);
+			break;
+		case ERR_INVALID_DATA_FOLDER:     //28
+			printf("data folder does not exist. (error=%d)", err);
+			break;
+		case ERR_STRINGFORM_FAILED:       //29
+			printf("formatting string failed. (error=%d)", err);
+			break;
+		case ERR_INVALID_EPS_MU:          //30
+			printf("eps and mu cannot be less than or equal to 0. (error=%d)", err);
+			break;
+		case ERR_INVALID_DOMAIN:          //31
+			printf("computing domain cannot be 0. (error=%d)", err);
+			break;
+		case ERR_INVALID_SPACE_STEP:      //32
+			printf("space step ds cannot be less than or equal to 0. (error=%d)", err);
+			break;
+			//
+		case ERR_CMD_COMMANDLINE:       //100
+			printf("Invalid command line. Cannot interpret the command line syntax (error=%d)", err);
+			break;
+		case ERR_CMD_TASKFILE:          //101
+			printf("Missing task file (/T parameter) (error=%d)", err);
+			break;
+		case ERR_CMD_LIBFOLDER:        //102
+			printf("Missing dynamic-link-library folder (/L parameter) (error=%d)", err);
+			break;
+		case ERR_CMD_WORKFOLDER:       //103
+			printf("Missing work folder (/W parameter) (error=%d)", err);
+			break;
+		case ERR_CMD_DATAFOLDER:       //104
+			printf("Missing data folder (/D parameter) (error=%d)", err);
+			break;
+		case ERR_CMD_DATAFOLDER2:      //105
+			printf("Missing second data folder (/D parameter) (error=%d)", err);
+			break;
+		case ERR_SIM_TASK_NOCODE:     //106
+			printf("Task code not programmed (error=%d)", err);
+			break;
 
-	case ERR_TP_INVALID_N:        //110
-		printf("Invalid value for half number of space grids. Check task parameter FDTD.N (error=%d)", err);
-		break;
-	case ERR_TP_INVALID_R:        //111
-		printf("Invalid value for half geometry range. Check task parameter FDTD.R (error=%d)", err);
-		break;
-	case ERR_TP_INVALID_TASK:     //112
-		printf("Invalid value for task number SIM.TASK (error=%d)", err);
-		break;
-	case ERR_TP_DATAFILE:         //113
-		printf("data file does not exist (error=%d)", err);
-		break;
+		case ERR_TP_INVALID_N:        //110
+			printf("Invalid value for half number of space grids. Check task parameter FDTD.N (error=%d)", err);
+			break;
+		case ERR_TP_INVALID_R:        //111
+			printf("Invalid value for half geometry range. Check task parameter FDTD.R (error=%d)", err);
+			break;
+		case ERR_TP_INVALID_TASK:     //112
+			printf("Invalid value for task number SIM.TASK (error=%d)", err);
+			break;
+		case ERR_TP_DATAFILE:         //113
+			printf("data file does not exist (error=%d)", err);
+			break;
 
-	case ERR_TP_FDTD:             //120
-		printf("Missing FDTD module. Check task parameters SIM.FDTD_DLL and SIM.FDTD_NAME (error=%d)", err);
-		break;
-	case ERR_TP_IV:               //121
-		printf("Missing Initial Value module. Check task parameters SIM.IV_DLL and SIM.IV_NAME (error=%d)", err);
-		break;
-	case ERR_TP_BC:               //122
-		printf("Missing Boundary Condition module. Check task parameters SIM.BC_DLL and SIM.BC_NAME (error=%d)", err);
-		break;
-	case ERR_TP_BASENAME:         //123
-		printf("Missing base file name. Use task parameter SIM.BASENAME to specify it. (error=%d)", err);
-		break;
-	case ERR_TP_BASENAME_DEF:     //124
-		printf("Cannot use 'DEF' for task parameter SIM.BASENAME. (error=%d)", err);
-		break;
+		case ERR_TP_FDTD:             //120
+			printf("Missing FDTD module. Check task parameters SIM.FDTD_DLL and SIM.FDTD_NAME (error=%d)", err);
+			break;
+		case ERR_TP_IV:               //121
+			printf("Missing Initial Value module. Check task parameters SIM.IV_DLL and SIM.IV_NAME (error=%d)", err);
+			break;
+		case ERR_TP_BC:               //122
+			printf("Missing Boundary Condition module. Check task parameters SIM.BC_DLL and SIM.BC_NAME (error=%d)", err);
+			break;
+		case ERR_TP_BASENAME:         //123
+			printf("Missing base file name. Use task parameter SIM.BASENAME to specify it. (error=%d)", err);
+			break;
+		case ERR_TP_BASENAME_DEF:     //124
+			printf("Cannot use 'DEF' for task parameter SIM.BASENAME. (error=%d)", err);
+			break;
 
-	case ERR_TSS_REPORTER://      201
-		printf("Reporter not assigned (error=%d)", err);
-		break;
-	case ERR_TSS_DERIVATIVE://    202
-		printf("missing space derivative estimator (error=%d)", err);
-		break;
+		case ERR_TSS_REPORTER://      201
+			printf("Reporter not assigned (error=%d)", err);
+			break;
+		case ERR_TSS_DERIVATIVE://    202
+			printf("missing space derivative estimator (error=%d)", err);
+			break;
 
-	case ERR_SIM_FDTD://     300
-		printf("FDTD module not loaded (error=%d)", err);
-		break;
-	case ERR_SIM_FIELD0://   301
-		printf("Initial Value module not loaded (error=%d)", err);
-		break;
-	case ERR_SIM_BOUNDARY:// 302
-		printf("Boundary Condition module not loaded (error=%d)", err);
-		break;
-	case ERR_SIM_MONOTONIC:// 303
-		printf("Sorting algoritm error: result list is not monotonic (error=%d)", err);
-		break;
+		case ERR_SIM_FDTD://     300
+			printf("FDTD module not loaded (error=%d)", err);
+			break;
+		case ERR_SIM_FIELD0://   301
+			printf("Initial Value module not loaded (error=%d)", err);
+			break;
+		case ERR_SIM_BOUNDARY:// 302
+			printf("Boundary Condition module not loaded (error=%d)", err);
+			break;
+		case ERR_SIM_MONOTONIC:// 303
+			printf("Sorting algoritm error: result list is not monotonic (error=%d)", err);
+			break;
 
-	case ERR_TASKFIILE_INVALID://       380
-		printf("Invalid task parameter formatting. Each parameter value should be expressed as 'name=value' in one line in a task file. (error=%d)", err);
-		break;
-	case ERR_TASKFIILE_DUPLICATE://     381
-		printf("Duplicated task parameter value in a task file (error=%d)", err);
-		break;
-	case ERR_TASK_PARAMETER_NAME://     382
-		printf("Task parameter name not in the task file (error=%d)", err);
-		break;
-	case ERR_TASKFIILE_CANNOT_OPEN://      383
-		printf("Error opening task file (error=%d)", err);
-		break;
-	case ERR_TASK_INVALID_VALUE://      384
-		printf("Invalid task parameter value (error=%d)", err);
-		break;
+		case ERR_TASKFIILE_INVALID://       380
+			printf("Invalid task parameter formatting. Each parameter value should be expressed as 'name=value' in one line in a task file. (error=%d)", err);
+			break;
+		case ERR_TASKFIILE_DUPLICATE://     381
+			printf("Duplicated task parameter value in a task file (error=%d)", err);
+			break;
+		case ERR_TASK_PARAMETER_NAME://     382
+			printf("Task parameter name not in the task file (error=%d)", err);
+			break;
+		case ERR_TASKFIILE_CANNOT_OPEN://      383
+			printf("Error opening task file (error=%d)", err);
+			break;
+		case ERR_TASK_INVALID_VALUE://      384
+			printf("Invalid task parameter value (error=%d)", err);
+			break;
 
-	case ERR_FILE_OPEN_READ_EACCES://   1001
-		printf("Error open file for reading. file's sharing mode does not allow the specified operations, or the given path is a directory. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_READ_EEXIST://   1002
-		printf("Error open file for reading. _O_CREAT and _O_EXCL flags specified, but filename already exists. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_READ_EINVAL://   1003
-		printf("Error open file for reading. Invalid oflag or pmode argument. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_READ_EMFILE://   1004
-		printf("Error open file for reading. No more file descriptors are available (too many files are open). (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_READ_ENOENT://   1005
-		printf("Error open file for reading. File does not exist. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_READ_UNDEFI://   1006
-		printf("Error open file for reading. File does not exist (UNDEFI). (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_EACCES://   1011
-		printf("Error open file for writing. file's sharing mode does not allow the specified operations, or the given path is a directory. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_EEXIST://   1012
-		printf("Error open file for writing. _O_CREAT and _O_EXCL flags specified, but filename already exists. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_EINVAL://   1013
-		printf("Error open file for writing. Invalid oflag or pmode argument. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_EMFILE://   1014
-		printf("Error open file for writing. No more file descriptors are available (too many files are open). (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_ENOENT://   1015
-		printf("Error open file for writing. File does not exist. (error=%d)",err);
-		break;
-	case ERR_FILE_OPEN_WRIT_UNDEFI://   1016
-		printf("Error open file for writing. File does not exist (UNDEFI). (error=%d)",err);
-		break;
-	case ERR_FILE_WRITE_FAIL://    1020
-		printf("Error writing file. (error=%d)",err);
-		break;
-	case ERR_FILE_WRITE_LESS://    1021
-		printf("Error writing file. Not all data written. (error=%d)",err);
-		break;
-	case ERR_FILE_CANNOT_DELETE:// 1022
-		printf("Error deleting file. (error=%d)", err);
-		break;
-	case ERR_FILE_READ_FAIL://     1030
-		printf("Error reading file. (error=%d)",err);
-		break;
-	case ERR_FILE_READ_LESS://     1031
-		printf("Error reading file. Not all data read. (error=%d)",err);
-		break;
-	case ERR_FILE_READ_EOF://      1032
-		printf("Error reading file. Already at end of file. (error=%d)",err);
-		break;
-	case ERR_GET_FILESIZE://    1050
-		printf("Error geting file size. Not all data read. (error=%d)",err);
-		break;
-	case ERR_FILE_NOTEXIST://   1051
-		printf("File does not exist. (error=%d)",err);
-		break;
-	case ERR_FILE_NAMING://   1052
-		printf("Invalid file name. (error=%d)",err);
-		break;
-	case ERR_FILENAME_LONG:// 1053
-		printf("File name is too long. (error=%d)",err);
-		break;
-	case ERR_FILESIZE_MISMATCH:// 1054
-		printf("File size mismatch. (error=%d)",err);
-		break;
-	case ERR_FILENAME_MISSING://  1055
-		printf("File name missing. (error=%d)", err);
-		break;
+		case ERR_FILE_OPEN_READ_EACCES://   1001
+			printf("Error open file for reading. file's sharing mode does not allow the specified operations, or the given path is a directory. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_READ_EEXIST://   1002
+			printf("Error open file for reading. _O_CREAT and _O_EXCL flags specified, but filename already exists. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_READ_EINVAL://   1003
+			printf("Error open file for reading. Invalid oflag or pmode argument. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_READ_EMFILE://   1004
+			printf("Error open file for reading. No more file descriptors are available (too many files are open). (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_READ_ENOENT://   1005
+			printf("Error open file for reading. File does not exist. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_READ_UNDEFI://   1006
+			printf("Error open file for reading. File does not exist (UNDEFI). (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_EACCES://   1011
+			printf("Error open file for writing. file's sharing mode does not allow the specified operations, or the given path is a directory. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_EEXIST://   1012
+			printf("Error open file for writing. _O_CREAT and _O_EXCL flags specified, but filename already exists. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_EINVAL://   1013
+			printf("Error open file for writing. Invalid oflag or pmode argument. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_EMFILE://   1014
+			printf("Error open file for writing. No more file descriptors are available (too many files are open). (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_ENOENT://   1015
+			printf("Error open file for writing. File does not exist. (error=%d)", err);
+			break;
+		case ERR_FILE_OPEN_WRIT_UNDEFI://   1016
+			printf("Error open file for writing. File does not exist (UNDEFI). (error=%d)", err);
+			break;
+		case ERR_FILE_WRITE_FAIL://    1020
+			printf("Error writing file. (error=%d)", err);
+			break;
+		case ERR_FILE_WRITE_LESS://    1021
+			printf("Error writing file. Not all data written. (error=%d)", err);
+			break;
+		case ERR_FILE_CANNOT_DELETE:// 1022
+			printf("Error deleting file. (error=%d)", err);
+			break;
+		case ERR_FILE_READ_FAIL://     1030
+			printf("Error reading file. (error=%d)", err);
+			break;
+		case ERR_FILE_READ_LESS://     1031
+			printf("Error reading file. Not all data read. (error=%d)", err);
+			break;
+		case ERR_FILE_READ_EOF://      1032
+			printf("Error reading file. Already at end of file. (error=%d)", err);
+			break;
+		case ERR_GET_FILESIZE://    1050
+			printf("Error geting file size. Not all data read. (error=%d)", err);
+			break;
+		case ERR_FILE_NOTEXIST://   1051
+			printf("File does not exist. (error=%d)", err);
+			break;
+		case ERR_FILE_NAMING://   1052
+			printf("Invalid file name. (error=%d)", err);
+			break;
+		case ERR_FILENAME_LONG:// 1053
+			printf("File name is too long. (error=%d)", err);
+			break;
+		case ERR_FILESIZE_MISMATCH:// 1054
+			printf("File size mismatch. (error=%d)", err);
+			break;
+		case ERR_FILENAME_MISSING://  1055
+			printf("File name missing. (error=%d)", err);
+			break;
 
-	case ERR_STR_CPY://  1056
-		printf("Error copying string. (error=%d)", err);
-		break;
-	case ERR_STR_CAT://  1057
-		printf("Error appending string. (error=%d)", err);
-		break;
-	case ERR_STR_PRF://  1058
-		printf("Error formating string. (error=%d)", err);
-		break;
-	case ERR_STR_SIZE_TOO_SMALL:// 1059
-		printf("String size too small. (error=%d)", err);
-		break;
-	case ERR_DIR_WORK://  1070
-		printf("Error getting current folder. (error=%d)", err);
-		break;
-	case ERR_FILE_MAP://  1071
-		printf("Error mapping file with mmap. (error=%d)", err);
-		break;
-	case ERR_EMF_EINVAL: //         2001
-		printf("Error formatning file name. (error=%d)",err);
-		break;
+		case ERR_STR_CPY://  1056
+			printf("Error copying string. (error=%d)", err);
+			break;
+		case ERR_STR_CAT://  1057
+			printf("Error appending string. (error=%d)", err);
+			break;
+		case ERR_STR_PRF://  1058
+			printf("Error formating string. (error=%d)", err);
+			break;
+		case ERR_STR_SIZE_TOO_SMALL:// 1059
+			printf("String size too small. (error=%d)", err);
+			break;
+		case ERR_DIR_WORK://  1070
+			printf("Error getting current folder. (error=%d)", err);
+			break;
+		case ERR_FILE_MAP://  1071
+			printf("Error mapping file with mmap. (error=%d)", err);
+			break;
+		case ERR_EMF_EINVAL: //         2001
+			printf("Error formatning file name. (error=%d)", err);
+			break;
 
 
-	case ERR_MEM_CREATE_FILE: //    6001
-		printf("Error creating/opening file. (error=%d)",err);
-		break;
-	case ERR_MEM_CREATE_MAP: //     6002
-		printf("Error creating memory map file. (error=%d)",err);
-		break;
-	case ERR_MEM_CREATE_VIEW: //    6003
-		printf("Error creating memory map view. (error=%d)",err);
-		break;
-	case ERR_MEM_ADDR_NOT_FOUND: // 6004
-		printf("Error locating allocated address for memory map. (error=%d)",err);
-		break;
-	case ERR_MEM_EINVAL: //         6005
-		printf("Error formatning file name. (error=%d)",err);
-		break;
-	case ERR_MEM_WRITE_FILE: //     6006
-		printf("Error writing file. (error=%d)",err);
-		break;
-	case ERR_MEM_OPEN_FILE: //      6007
-		printf("Error opening file for memory mapping. (error=%d)",err);
-		break;
-	case ERR_INVALID_DLLPARAM: //   6008
-		printf("Error loading DLL file: invalid parameter. (error=%d)",err);
-		break;
-	case ERR_INVALID_DLLPATH: //    6009
-		printf("Error loading DLL file: invalid path. (error=%d)",err);
-		break;
-	case ERR_DLL_FUNC_NOTFOUND: //  6010
-		printf("Error loading DLL file: function not found. (error=%d)",err);
-		break;
-	case ERR_DLL_FUNC_ERROR: //     6011
-		printf("Error executing DLL file. Is the class constructor listed in Export.cpp? (error=%d)",err);
-		break;
-	case ERR_INVALID_PARAMS: //     6012
-		printf("Invalid parameters. (error=%d)",err);
-		break;
-	case ERR_MEM_GET_FILE_SIZE: //  6013
-		printf("Error getting file size. (error=%d)",err);
-		break;
+		case ERR_MEM_CREATE_FILE: //    6001
+			printf("Error creating/opening file. (error=%d)", err);
+			break;
+		case ERR_MEM_CREATE_MAP: //     6002
+			printf("Error creating memory map file. (error=%d)", err);
+			break;
+		case ERR_MEM_CREATE_VIEW: //    6003
+			printf("Error creating memory map view. (error=%d)", err);
+			break;
+		case ERR_MEM_ADDR_NOT_FOUND: // 6004
+			printf("Error locating allocated address for memory map. (error=%d)", err);
+			break;
+		case ERR_MEM_EINVAL: //         6005
+			printf("Error formatning file name. (error=%d)", err);
+			break;
+		case ERR_MEM_WRITE_FILE: //     6006
+			printf("Error writing file. (error=%d)", err);
+			break;
+		case ERR_MEM_OPEN_FILE: //      6007
+			printf("Error opening file for memory mapping. (error=%d)", err);
+			break;
+		case ERR_INVALID_DLLPARAM: //   6008
+			printf("Error loading DLL file: invalid parameter. (error=%d)", err);
+			break;
+		case ERR_INVALID_DLLPATH: //    6009
+			printf("Error loading DLL file: invalid path. (error=%d)", err);
+			break;
+		case ERR_DLL_FUNC_NOTFOUND: //  6010
+			printf("Error loading DLL file: function not found. (error=%d)", err);
+			break;
+		case ERR_DLL_FUNC_ERROR: //     6011
+			printf("Error executing DLL file. Is the class constructor listed in Export.cpp? (error=%d)", err);
+			break;
+		case ERR_INVALID_PARAMS: //     6012
+			printf("Invalid parameters. (error=%d)", err);
+			break;
+		case ERR_MEM_GET_FILE_SIZE: //  6013
+			printf("Error getting file size. (error=%d)", err);
+			break;
 
-	case ERR_FOLDER_NOTEXIST://    6014
-		printf("Folder does not exist. (error=%d)",err);
-		break;
-	case ERR_MEM_MAN_NULL://       6015
-		printf("Memory manager does not exist. (error=%d)",err);
-		break;
-	case ERR_MEM_MAN_APP_PATH://   6016
-		printf("Error getting app folder. (error=%d)",err);
-		break;
-	case ERR_MEM_OUTOFMEMORY://    6017
-		printf("Out of memory. (error=%d)",err);
-		break;
-	case ERR_MEM_DIR_NOTEXIST://   6018
-		printf("Folder does not exist. (error=%d)",err);
-		break;
-	case ERR_MEM_UNKNOWN: //       6030
-		printf("Unknown memory management error. (error=%d)",err);
-		break;
-		
-	case ERR_MATH_DET_0:       //8001
-		printf("A matrix's determinant is 0. (error=%d)",err);
-		break;
-	case ERR_MATH_INV_DIM:     //8002
-		printf("Matrix dimension cannot be 0 or negative. (error=%d)",err);
-		break;
-	case ERR_MATH_OUTOFMEMORY: //8003
-		printf("Out of memory. (error=%d)",err);
-		break;
-	case ERR_MATH_NOT_INVERSE: //8004
-		printf("It is not an inverse matrix of a given matrix. (error=%d)",err);
-		break;
-	case ERR_MATH_MEM_SMALL:  //8100
-		printf("Memory allocated is too small. (error=%d)",err);
-		break;
-	case ERR_INVALID_PARAM:   //10001
-		printf("Invalid parameters are used. (error=%d)", err);
-		break;
-	case ERR_INVERSEMATRIX:   //10002
-		printf("Cannot get an inverse matrix. (error=%d)", err);
-		break;
-	case ERR_SIMULATOR_NAME:   //10003
-		printf("Invalid simulator class name. (error=%d)", err);
-		break;
-	case ERR_SOURCE_NAME:   //10004
-		printf("Invalid fields source class name. (error=%d)", err);
-		break;
-	case ERR_FIELD0_NAME:   //10005
-		printf("Invalid fields setter class name. (error=%d)", err);
-		break;
-	case ERR_BOUNDARY_NAME:   //10006
-		printf("Invalid boundary condition class name. (error=%d)", err);
-		break;
-	case ERR_SETTER_NOTTEST:// 10007
-		printf("Field setter is not derived from FieldsTester for testing. (error=%d)", err);
-		break;
-	case ERR_INVALID_COUR_F://10008
-		printf("Courant number factor must larger than 0 and smaller than 1. (error=%d)", err);
-		break;
-	case ERR_NOT_IMPLEMENT://  10009
-		printf("Requested function is not implemented. (error=%d)", err);
-		break;
-	case ERR_CURL_FAILED://    10010
-		printf("Failed calculating curl; curl and field cannot use the same memory. (error=%d)", err);
-		break;
-	case ERR_SRC_NOT_INIT://   10011
-		printf("Field source not initialized. (error=%d)", err);
-		break;
-	case ERR_BC_NOT_INIT://    10012
-		printf("Boundary conditions not initialized. (error=%d)", err);
-		break;
-	case ERR_TIMECLASSNAME://  10013
-		printf("Invalid time class name. (error=%d)", err);
-		break;
-	case ERR_STATISTIC_NAME:// 10014
-		printf("Invalid statistics class name. (error=%d)", err);
-		break;
-	case ERR_MAXTIME_START:// 10015
-		printf("The maximum time steps must be greater than the start time step. (error=%d)", err);
-		break;
-	case ERR_START_INTERVAL:// 10016
-		printf("Parameter error: the Start Time Step is not dividable by the Save Interval. (error=%d)", err);
-		break;
-	case ERR_PML_LN_BIG://     10101
-		printf("PML parameter error: the thickness is too large. (error=%d)", err);
-		break;
-	case ERR_PML_POWER_0://    10102
-		printf("PML parameter error: the power should be larger than 1. (error=%d)", err);
-		break;
-	case ERR_PML_MAGNITUDE://  10103
-		printf("PML parameter error: the maximum magnitude should not be negative. (error=%d)", err);
-		break;
-	default:
-		printf("Unknown error. (error=%d)",err);
-		break;
+		case ERR_FOLDER_NOTEXIST://    6014
+			printf("Folder does not exist. (error=%d)", err);
+			break;
+		case ERR_MEM_MAN_NULL://       6015
+			printf("Memory manager does not exist. (error=%d)", err);
+			break;
+		case ERR_MEM_MAN_APP_PATH://   6016
+			printf("Error getting app folder. (error=%d)", err);
+			break;
+		case ERR_MEM_OUTOFMEMORY://    6017
+			printf("Out of memory. (error=%d)", err);
+			break;
+		case ERR_MEM_DIR_NOTEXIST://   6018
+			printf("Folder does not exist. (error=%d)", err);
+			break;
+		case ERR_MEM_UNKNOWN: //       6030
+			printf("Unknown memory management error. (error=%d)", err);
+			break;
+
+		case ERR_MATH_DET_0:       //8001
+			printf("A matrix's determinant is 0. (error=%d)", err);
+			break;
+		case ERR_MATH_INV_DIM:     //8002
+			printf("Matrix dimension cannot be 0 or negative. (error=%d)", err);
+			break;
+		case ERR_MATH_OUTOFMEMORY: //8003
+			printf("Out of memory. (error=%d)", err);
+			break;
+		case ERR_MATH_NOT_INVERSE: //8004
+			printf("It is not an inverse matrix of a given matrix. (error=%d)", err);
+			break;
+		case ERR_MATH_MEM_SMALL:  //8100
+			printf("Memory allocated is too small. (error=%d)", err);
+			break;
+		case ERR_INVALID_PARAM:   //10001
+			printf("Invalid parameters are used. (error=%d)", err);
+			break;
+		case ERR_INVERSEMATRIX:   //10002
+			printf("Cannot get an inverse matrix. (error=%d)", err);
+			break;
+		case ERR_SIMULATOR_NAME:   //10003
+			printf("Invalid simulator class name. (error=%d)", err);
+			break;
+		case ERR_SOURCE_NAME:   //10004
+			printf("Invalid fields source class name. (error=%d)", err);
+			break;
+		case ERR_FIELD0_NAME:   //10005
+			printf("Invalid fields setter class name. (error=%d)", err);
+			break;
+		case ERR_BOUNDARY_NAME:   //10006
+			printf("Invalid boundary condition class name. (error=%d)", err);
+			break;
+		case ERR_SETTER_NOTTEST:// 10007
+			printf("Field setter is not derived from FieldsTester for testing. (error=%d)", err);
+			break;
+		case ERR_INVALID_COUR_F://10008
+			printf("Courant number factor must larger than 0 and smaller than 1. (error=%d)", err);
+			break;
+		case ERR_NOT_IMPLEMENT://  10009
+			printf("Requested function is not implemented. (error=%d)", err);
+			break;
+		case ERR_CURL_FAILED://    10010
+			printf("Failed calculating curl; curl and field cannot use the same memory. (error=%d)", err);
+			break;
+		case ERR_SRC_NOT_INIT://   10011
+			printf("Field source not initialized. (error=%d)", err);
+			break;
+		case ERR_BC_NOT_INIT://    10012
+			printf("Boundary conditions not initialized. (error=%d)", err);
+			break;
+		case ERR_TIMECLASSNAME://  10013
+			printf("Invalid time class name. (error=%d)", err);
+			break;
+		case ERR_STATISTIC_NAME:// 10014
+			printf("Invalid statistics class name. (error=%d)", err);
+			break;
+		case ERR_MAXTIME_START:// 10015
+			printf("The maximum time steps must be greater than the start time step. (error=%d)", err);
+			break;
+		case ERR_START_INTERVAL:// 10016
+			printf("Parameter error: the Start Time Step is not dividable by the Save Interval. (error=%d)", err);
+			break;
+		case ERR_PML_LN_BIG://     10101
+			printf("PML parameter error: the thickness is too large. (error=%d)", err);
+			break;
+		case ERR_PML_POWER_0://    10102
+			printf("PML parameter error: the power should be larger than 1. (error=%d)", err);
+			break;
+		case ERR_PML_MAGNITUDE://  10103
+			printf("PML parameter error: the maximum magnitude should not be negative. (error=%d)", err);
+			break;
+		default:
+			printf("Unknown error. (error=%d)", err);
+			break;
+		}
 	}
 }
 

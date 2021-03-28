@@ -39,5 +39,6 @@ int task330_coefficientsOnly(MemoryManager *mem, TaskFile *taskfile, char *dataF
 int task370_makePointTimeFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int task371_createFieldComponentLines(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int task372_makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
+int task373_combineCSVFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 
 //
