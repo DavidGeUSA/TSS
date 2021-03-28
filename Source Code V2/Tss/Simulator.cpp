@@ -19,6 +19,8 @@ Allrights reserved by David Ge
 Simulator::Simulator()
 {
 	timeAdv = NULL;
+	csvFiles = NULL;
+	ResetSimStruct(&simObj);
 }
 
 
@@ -29,6 +31,7 @@ Simulator::~Simulator()
 		delete timeAdv;
 		timeAdv = NULL;
 	}
+	closeCSVoutputFiles();
 }
 
 int Simulator::initializeSimulator(char *timeClassName)
@@ -360,6 +363,9 @@ void Simulator::ResetSimStruct(TssSimStruct *tss)
 	tss->saveToFilename = NULL;
 	tss->src = NULL;
 	tss->timeCoefficientsFile = NULL;
+	tss->generateStatisticFile = true;
+	tss->numOutputFiles = 0;
+	tss->outputFiles = NULL;
 }
 
 /*
@@ -425,6 +431,7 @@ void Simulator::GetSimStruct(TaskFile *taskConfig, TssSimStruct *tss)
 	tss->timeCoefficientsFile = taskConfig->getString(TP_TSS_TIMEFILE, true);
 	tss->curlCoefficientsFile = taskConfig->getString(TP_TSS_SPACEFILE, true);
 	tss->generateStatisticFile = taskConfig->getBoolean(TP_TSS_STATISTICS, true);
+	tss->outputFiles = taskConfig->getOutputFormats(SIM_OUTPUT_CSV, true, &(tss->numOutputFiles));
 }
 
 int Simulator::FormSpaceMatrixFilename(char *spaceMatrixFile, const char *dataFolder, unsigned int smax, char *matrixFileFolder)
@@ -492,6 +499,85 @@ int Simulator::formStatisticsFilename(char *filename)
 	return ret;
 }
 
+/*
+	form a file name for creating a CSV output file
+*/
+int Simulator::formCSVoutputFilename(char *filename, FieldOutputStruct *outputFormat, unsigned int startTimeStep, unsigned int endTimeStep)
+{
+	int ret = ERR_OK;
+	char df[FILENAME_MAX];
+	ret = formFilePath(df, FILENAME_MAX, simObj.mainDataFolder, simObj.dataFileFolder);
+	if (ret == ERR_OK)
+	{
+		char fn[FILENAME_MAX];
+		ret = formFilePath(fn, FILENAME_MAX, df, simObj.saveToFilename);
+		if (ret == ERR_OK)
+		{
+			char ehf[20];
+			int k = 0;
+			ehf[k] = 0;
+			if ((outputFormat->elements & Ex) != 0)
+			{
+				ehf[k] = 'E';
+				k++;
+				ehf[k] = 'x';
+				k++;
+				ehf[k] = 0;
+			}
+			if ((outputFormat->elements & Ey) != 0)
+			{
+				ehf[k] = 'E';
+				k++;
+				ehf[k] = 'y';
+				k++;
+				ehf[k] = 0;
+			}
+			if ((outputFormat->elements & Ez) != 0)
+			{
+				ehf[k] = 'E';
+				k++;
+				ehf[k] = 'z';
+				k++;
+				ehf[k] = 0;
+			}
+			if ((outputFormat->elements & Hx) != 0)
+			{
+				ehf[k] = 'H';
+				k++;
+				ehf[k] = 'x';
+				k++;
+				ehf[k] = 0;
+			}
+			if ((outputFormat->elements & Hy) != 0)
+			{
+				ehf[k] = 'H';
+				k++;
+				ehf[k] = 'y';
+				k++;
+				ehf[k] = 0;
+			}
+			if ((outputFormat->elements & Hz) != 0)
+			{
+				ehf[k] = 'H';
+				k++;
+				ehf[k] = 'z';
+				k++;
+				ehf[k] = 0;
+			}
+			ret = sprintf_1(filename, FILENAME_MAX, "%s_%u_%u_%u_%s_%u_%u.txt", 
+				fn, 
+				outputFormat->point.i, 
+				outputFormat->point.j,
+				outputFormat->point.k,
+				ehf,
+				startTimeStep,//simObj.pams.startTimeStep,
+				endTimeStep//simObj.pams.maxTimeSteps
+				) <= 0 ? ERR_STR_PRF : ERR_OK;
+		}
+	}
+	return ret;
+}
+
 int Simulator::formDataFilename(char *filename, const char *eh, const char *ext, unsigned int fileIndex)
 {
 	int ret = ERR_OK;
@@ -530,10 +616,162 @@ int Simulator::GetTime0FilenameH(char *filename)
 	return ret;
 }
 
+/*
+	open CSV files for output
+*/
+int Simulator::openCSVoutputFiles()
+{
+	int ret = ERR_OK;
+	if (csvFiles == NULL)
+	{
+		//open output files
+		if (simObj.numOutputFiles > 0)
+		{
+			csvFiles = (FILE **)malloc(simObj.numOutputFiles * sizeof(FILE *));
+			if (csvFiles == NULL)
+			{
+				ret = ERR_OUTOFMEMORY;
+			}
+			else
+			{
+				char fn[FILENAME_MAX];
+				for (unsigned int i = 0; i < simObj.numOutputFiles; i++)
+				{
+					csvFiles[i] = NULL;
+				}
+				for (unsigned int i = 0; i < simObj.numOutputFiles; i++)
+				{
+					ret = formCSVoutputFilename(fn, &(simObj.outputFiles[i]),simObj.pams.startTimeStep,simObj.pams.maxTimeSteps);
+					if (ret == ERR_OK)
+					{
+						ret = openTextfileWrite(fn, &(csvFiles[i]));
+						if (ret != ERR_OK)
+						{
+							break;
+						}
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			ret = 30000;
+		}
+	}
+	return ret;
+}
+
+/*
+	write outputs to CSV files
+*/
+int Simulator::outputToCSVfiles()
+{
+	int ret = ERR_OK;
+	if (csvFiles != NULL)
+	{
+		size_t w;
+		size_t buffSize = 1024;
+		size_t valueSize = 120;
+		char buff[1024];
+		char valueBuf[120];
+		Point3Dstruct *efield = timeAdv->GetFieldE();
+		Point3Dstruct *hfield = timeAdv->GetFieldH();
+		for (unsigned int h = 0; h < simObj.numOutputFiles; h++)
+		{
+			if (csvFiles[h] != NULL)
+			{
+				sprintf_1(buff, buffSize, "%g", timeAdv->GetTimeValue());
+				w = space.Idx(simObj.outputFiles[h].point.i, simObj.outputFiles[h].point.j, simObj.outputFiles[h].point.k);
+				if (simObj.outputFiles[h].elements & Ex)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", efield[w].x);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				if (simObj.outputFiles[h].elements & Ey)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", efield[w].y);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				if (simObj.outputFiles[h].elements & Ez)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", efield[w].z);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				//
+				if (simObj.outputFiles[h].elements & Hx)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].x);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				if (simObj.outputFiles[h].elements & Hy)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].y);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				if (simObj.outputFiles[h].elements & Hz)
+				{
+					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].z);
+					strcat_0(buff, buffSize, valueBuf);
+				}
+				strcat_0(buff, buffSize, "\n");
+				ret = writefile(csvFiles[h], buff, (unsigned int)strnlen_0(buff, buffSize));
+				if (ret != ERR_OK)
+				{
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		ret = 30001;
+	}
+	return ret;
+}
+
+/*
+	close CSV output files
+*/
+void Simulator::closeCSVoutputFiles()
+{
+	if (csvFiles != NULL)
+	{
+		for (unsigned int i = 0; i < simObj.numOutputFiles; i++)
+		{
+			if (csvFiles[i] != NULL)
+			{
+				closefile(csvFiles[i]);
+				csvFiles[i] = NULL;
+			}
+		}
+		free(csvFiles);
+		csvFiles = NULL;
+	}
+}
+
 int Simulator::saveFieldsToFiles()
 {
 	int ret = ERR_OK;
-	if (simObj.saveToFilename != NULL)
+	bool bSaveWholeFields;
+	if (simObj.numOutputFiles > 0)
+	{
+		bSaveWholeFields = (timeAdv->GetTimeIndex() == simObj.pams.maxTimeSteps); //save fields for the last time step
+		//
+		ret = openCSVoutputFiles();
+		if (ret == ERR_OK)
+		{
+			ret = outputToCSVfiles();
+		}
+	}
+	else
+	{
+		bSaveWholeFields = (simObj.saveToFilename != NULL);
+	}
+	if (bSaveWholeFields)
 	{
 		char filename[FILENAME_MAX];
 		ret = formDataFilename(filename, "e", "dat", datafileindex);
@@ -611,6 +849,7 @@ int Simulator::run()
 {
 	int ret = Initialized();
 	if (ret != ERR_OK) return ret;
+	//this feature is needed for task 310 -- considering remove it 
 	//ret = saveSimulateParametersToFile();
 	//if (ret != ERR_OK) return ret;
 	//
@@ -672,14 +911,12 @@ int Simulator::run()
 		printf("Prepared fields. Time used:%Iu\r\n", endTime - startTime);
 #else
 #endif
-		//reportProcess(simObj.reporter, false, "Prepared fields. Time used:%u", endTime - startTime);
 		simObj.reporter("Start TSS simulation. ", false);
 		timeAdv->startThreads();
 		startTimeTotal = getTimeTick();
 		while (timeAdv->GetTimeIndex() < simObj.pams.maxTimeSteps)
 		{
 			startTime = getTimeTick();
-			//reportProcess(simObj->reporter, false, "Time index %d ...", timeAdv->GetTimeIndex());
 			//do FDTD one step
 			ret = timeAdv->AdvanceOneStep();
 			if (ret != ERR_OK)
@@ -689,7 +926,6 @@ int Simulator::run()
 			timeAdv->advanceTimeStepValue();
 			endTime = getTimeTick();
 #ifdef TIMESTEPPROFILING
-			//reportProcess(simObj->reporter, true, "Time index %d finished. Time used: %d                  ", timeAdv->GetTimeIndex(), endTime - startTime);
 			printf("%d:%d, c1:%d(%d,%d),a1:%d(%d,%d),c2:%d(%d,%d),a2:%d(%d,%d),c3:%d(%d,%d),a3:%d(%d,%d)\r\n", timeAdv->GetTimeIndex(), endTime - startTime
 				,timeAdv->timeUsedCal1
 				, timeAdv->timeUsedCal1E
@@ -752,6 +988,7 @@ int Simulator::run()
 		endTimeTotal = getTimeTick();
 		timeAdv->removeThreads();
 		//finished simulation
+		closeCSVoutputFiles();
 		if (simObj.generateStatisticFile)
 		{
 			puts("\r\nGenerating statistics file... ");
@@ -804,6 +1041,7 @@ int Simulator::generateStatisticFile()
 				{
 					//loop through all data files
 					int fileIndex = 0;
+					size_t fileTimeStep = 0;
 					if (simObj.pams.startTimeStep > 0)
 					{
 						if (simObj.pams.saveInterval > 1)
@@ -811,7 +1049,15 @@ int Simulator::generateStatisticFile()
 						else
 							fileIndex = simObj.pams.startTimeStep;
 					}
-					while (ret == ERR_OK)
+					if (simObj.pams.saveInterval > 1)
+					{
+						fileTimeStep = fileIndex * simObj.pams.saveInterval;
+					}
+					else
+					{
+						fileTimeStep = fileIndex;
+					}
+					while (ret == ERR_OK && fileTimeStep <= simObj.pams.maxTimeSteps)
 					{
 						ret = formDataFilename(filename, "e","dat", fileIndex);
 						if (fileexists(filename))
@@ -852,9 +1098,10 @@ int Simulator::generateStatisticFile()
 						}
 						else
 						{
-							break;
+							//keep going until the maximum time step 
+							//break;
 						}
-						if (ret == ERR_OK)
+						if (ret == ERR_OK && efile != NULL)
 						{
 							ret = formDataFilename(filename, "h","dat", fileIndex);
 							if (fileexists(filename))
@@ -895,7 +1142,8 @@ int Simulator::generateStatisticFile()
 							}
 							else
 							{
-								break;
+								//keep going until the maximum time step
+								//break;
 							}
 						}
 						if (ret == ERR_OK)
@@ -913,6 +1161,14 @@ int Simulator::generateStatisticFile()
 						printf(" %d", fileIndex);
 						//
 						fileIndex++;
+						if (simObj.pams.saveInterval > 1)
+						{
+							fileTimeStep = fileIndex * simObj.pams.saveInterval;
+						}
+						else
+						{
+							fileTimeStep = fileIndex;
+						}
 					}
 					if (efile != NULL) FreeMemory(efile);
 					if (hfile != NULL) FreeMemory(hfile);
@@ -958,4 +1214,67 @@ int Simulator::calculateStatistics(Point3Dstruct *efile, Point3Dstruct *hfile, i
 	return ret;
 }
 
+int Simulator::combineCsvFiles(unsigned *endTimeSteps, size_t count)
+{
+	int ret = ERR_OK;
+	unsigned startStep;
+	unsigned endStep;
+	char fn[FILENAME_MAX];
+	FILE *combinedFileHandle;
+	//FILE *sourceFileHandle;
+	char *data;
+	size_t fSize;
+	MemoryManager *_mem = simObj.mem;
+	//
+	if (simObj.numOutputFiles > 0)
+	{
+		//loop through each output
+		for (unsigned int n = 0; n < simObj.numOutputFiles; n++)
+		{
+			//open combined file
+			startStep = 0;
+			endStep = endTimeSteps[count - 1];
+			ret = formCSVoutputFilename(fn,&(simObj.outputFiles[n]),startStep,endStep);
+			if (ret != ERR_OK)
+			{
+				break;
+			}
+			ret = openfileWrite(fn, &combinedFileHandle);
+			if (ret != ERR_OK)
+			{
+				break;
+			}
+			//loop through end time steps
+			for (size_t h = 0; h < count; h++)
+			{
+				endStep = endTimeSteps[h];
+				//
+				ret = formCSVoutputFilename(fn, &(simObj.outputFiles[n]), startStep, endStep);
+				if (ret != ERR_OK)
+				{
+					break;
+				}
+				data = (char *)ReadFileIntoMemory(fn, &fSize, &ret);
+				if (ret != ERR_OK)
+				{
+					break;
+				}
+				ret = writefile(combinedFileHandle, data, (unsigned int)fSize);
+				FreeMemory(data);
+				if (ret != ERR_OK)
+				{
+					break;
+				}
+				//
+				startStep = endStep;
+			}
+			closefile(combinedFileHandle);
+			if (ret != ERR_OK)
+			{
+				break;
+			}
+		}
+	}
+	return ret;
+}
 //

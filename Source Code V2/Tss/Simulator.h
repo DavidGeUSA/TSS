@@ -36,10 +36,12 @@ typedef struct TssSimStruct {
 	char *timeCoefficientsFile;     //if it is not NULL, save time advance coefficients to this file
 	char *curlCoefficientsFile;     //if it is not NULL, save curl estimation coefficients to this file
 	bool generateStatisticFile;     //whether to generate a statistics file on finishing simulation
+	unsigned int numOutputFiles;    //number of output files = count of outputFiles
+	FieldOutputStruct *outputFiles; //output file format array, each array item is for one output file
 }TssSimStruct;
 
 /*
-	run TSS simulation
+	run FDTD simulation
 */
 class Simulator:virtual public Plugin
 {
@@ -49,16 +51,21 @@ private:
 	TssSimStruct simObj;             //simulation configuration
 	unsigned int saveFileIndexCount; //time to save fields to file: saveFileIndexCount > saveToFileInterval 
 	unsigned int datafileindex;      //appended to data file names; 0,1,2,...
+	FILE **csvFiles;                 //output files specified by simObj.outputFiles
 	//
 	int saveFieldsToFiles();         //save E and H to two files
 	int saveFieldToFile(Point3Dstruct *field, char *filename); //save a field to a file
 	int loadFieldFromFile(Point3Dstruct *field, char *filename); //load a field from a file
 	int saveSimulateParametersToFile();         //save confiurations to a text file
 	int formStatisticsFilename(char *filename); //form a file name for creating a field statistics file
+	int formCSVoutputFilename(char *filename, FieldOutputStruct *outputFormat, unsigned int startTimeStep, unsigned int endTimeStep); //form a file name for creating a CSV output file
 	//
 	int writeSpaceEstimationMatricesToFile();   //write space estimation matrixes to a text file
 	int writeTimeAdvanceCoefficientsToFile();   //write time advance coefficiets to a text file
 	//
+	int openCSVoutputFiles();    //open CSV files for output
+	int outputToCSVfiles();      //write outputs to CSV files
+	void closeCSVoutputFiles();   //close CSV output files
 public:
 	Simulator();
 	~Simulator();
@@ -113,7 +120,8 @@ public:
 	double *GetJeH(){ return timeAdv->GetJeH(); }
 	double *GetJeE(){ return timeAdv->GetJeE(); }
 	double *GetJmE(){ return timeAdv->GetJmE(); }
-
+	//
+	int combineCsvFiles(unsigned *endTimeSteps, size_t count);
 	//==============================================================================
 	//major functionality
 	virtual int initializeSimulator(char *timeClassName);
