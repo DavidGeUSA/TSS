@@ -531,6 +531,237 @@ bool TaskFile::getBoolean(const char *name, bool optional)
 }
 
 /*
+
+*/
+FieldOutputStruct *TaskFile::getOutputFormats(const char *name, bool optional, unsigned int *count)
+{
+	int n = getIndexByName(name);
+	if (ret == ERR_OK)
+	{
+		if (n >= 0)
+		{
+			if (_lines[n].value != NULL)
+			{
+				if (strlen(_lines[n].value) > 0)
+				{
+					if (_lines[n].data == NULL)
+					{
+						std::vector<FieldOutputStruct> v;
+						std::string str(_lines[n].value);
+						while (ret == ERR_OK && str.length() > 0)
+						{
+							std::string::size_type loc = str.find_first_of('(');
+							if (loc == std::string::npos)
+								break;
+							else
+							{
+								std::string::size_type loc2 = str.find_first_of(')');
+								if (loc2 < loc)
+								{
+									ret = ERR_TASK_INVALID_VALUE;
+									break;
+								}
+								else
+								{
+									FieldOutputStruct gd;
+									gd.point.i = gd.point.j = gd.point.k = 0;
+									gd.elements = None;
+									string str0 = str.substr(loc2 + 1, string::npos);
+									string str1 = str.substr(loc + 1, loc2 - loc - 1);
+									string::size_type l0 = str1.find_first_of(',');
+									str = str0;
+									if (l0 != string::npos)
+									{
+										string sv = str1.substr(0, l0);
+										int i = std::stoi(sv);
+										if (i >= 0)
+										{
+											gd.point.i = (unsigned int)i;
+											sv = str1.substr(l0 + 1, string::npos);
+											str1 = sv;
+											l0 = str1.find_first_of(',');
+											if (l0 != string::npos)
+											{
+												sv = str1.substr(0, l0);
+												i = std::stoi(sv);
+												if (i >= 0)
+												{
+													gd.point.j = (unsigned int)i;
+													sv = str1.substr(l0 + 1, string::npos);
+													str1 = sv;
+													l0 = str1.find_first_of(',');
+													if (l0 != string::npos)
+													{
+														sv = str1.substr(0, l0);
+														i = std::stoi(sv);
+														if (i >= 0)
+														{
+															int f = 0;
+															gd.point.k = (unsigned int)i;
+															for (int k = 1; k <= 6; k++)
+															{
+																//k-th element
+																sv = str1.substr(l0 + 1, string::npos);
+																str1 = sv;
+																l0 = str1.find_first_of('|');
+																if (l0 != string::npos)
+																{
+																	sv = str1.substr(0, l0);
+																	if (sv.compare("Ex") == 0)
+																	{
+																		f = f | Ex;
+																	}
+																	else if (sv.compare("Ey") == 0)
+																	{
+																		f = f | Ey;
+																	}
+																	else if (sv.compare("Ez") == 0)
+																	{
+																		f = f | Ez;
+																	}
+																	else if (sv.compare("Hx") == 0)
+																	{
+																		f = f | Hx;
+																	}
+																	else if (sv.compare("Hy") == 0)
+																	{
+																		f = f | Hy;
+																	}
+																	else if (sv.compare("Hz") == 0)
+																	{
+																		f = f | Hz;
+																	}
+																	else
+																	{
+																		ret = ERR_TASK_INVALID_VALUE;
+																		break;
+																	}
+																}
+																else
+																{
+																	if (sv.compare("Ex") == 0)
+																	{
+																		f = f | Ex;
+																	}
+																	else if (sv.compare("Ey") == 0)
+																	{
+																		f = f | Ey;
+																	}
+																	else if (sv.compare("Ez") == 0)
+																	{
+																		f = f | Ez;
+																	}
+																	else if (sv.compare("Hx") == 0)
+																	{
+																		f = f | Hx;
+																	}
+																	else if (sv.compare("Hy") == 0)
+																	{
+																		f = f | Hy;
+																	}
+																	else if (sv.compare("Hz") == 0)
+																	{
+																		f = f | Hz;
+																	}
+																	else
+																	{
+																		ret = ERR_TASK_INVALID_VALUE;
+																	}
+																	break;
+																}
+															}
+															if (ret == ERR_OK)
+															{
+																bool bExist = false;
+																gd.elements = (FieldElements)f;
+																for (size_t h = 0; h < v.size(); h++)
+																{
+																	if (gd.elements == v[h].elements)
+																	{
+																		if (gd.point.i == v[h].point.i)
+																		{
+																			if (gd.point.j == v[h].point.j)
+																			{
+																				if (gd.point.k == v[h].point.k)
+																				{
+																					bExist = true;
+																					break;
+																				}
+																			}
+																		}
+																	}
+																}
+																if (!bExist)
+																{
+																	v.push_back(gd);
+																}
+															}
+														}
+														else
+														{
+															ret = ERR_TASK_INVALID_VALUE;
+														}
+													}
+													else
+													{
+														ret = ERR_TASK_INVALID_VALUE;
+													}
+												}
+												else
+												{
+													ret = ERR_TASK_INVALID_VALUE;
+												}
+											}
+											else
+											{
+												ret = ERR_TASK_INVALID_VALUE;
+											}
+										}
+										else
+										{
+											ret = ERR_TASK_INVALID_VALUE;
+										}
+									}
+									else
+									{
+										ret = ERR_TASK_INVALID_VALUE;
+									}
+								}
+							}
+						}
+						if (ret == ERR_OK && v.size() > 0)
+						{
+							FieldOutputStruct *d = (FieldOutputStruct *)malloc(v.size()*sizeof(FieldOutputStruct));
+							if (d == NULL)
+								ret = ERR_OUTOFMEMORY;
+							else
+							{
+								std::copy(v.begin(), v.end(), d);
+								_lines[n].dataSize = v.size();
+								_lines[n].data = d;
+							}
+						}
+					}
+					if (ret == ERR_OK)
+					{
+						*count = (unsigned int)(_lines[n].dataSize);
+						return (FieldOutputStruct *)(_lines[n].data);
+					}
+				}
+			}
+		}
+	}
+	if (optional)
+	{
+		if (ret == ERR_TASK_PARAMETER_NAME)
+		{
+			ret = ERR_OK;
+		}
+	}
+	return NULL;
+}
+
+/*
 	data format:
 	(i,j,k),(i,j,k),...
 */
@@ -570,7 +801,7 @@ GridNode3Dstruct *TaskFile::getGridNodes(const char *name, bool optional, size_t
 									string str1 = str.substr(loc + 1, loc2 - loc-1);
 									string::size_type l0 = str1.find_first_of(',');
 									str = str0;
-									if (l0 > 0)
+									if (l0 != string::npos)
 									{
 										string sv = str1.substr(0, l0);
 										int i = std::stoi(sv);
@@ -580,7 +811,7 @@ GridNode3Dstruct *TaskFile::getGridNodes(const char *name, bool optional, size_t
 											sv = str1.substr(l0 + 1, string::npos);
 											str1 = sv;
 											l0 = str1.find_first_of(',');
-											if (l0 > 0)
+											if (l0 != string::npos)
 											{
 												sv = str1.substr(0, l0);
 												i = std::stoi(sv);
@@ -672,7 +903,7 @@ unsigned *TaskFile::getUIntArray(const char *name, bool optional, size_t *size)
 						{
 							string s;
 							string::size_type l0 = str.find_first_of(',');
-							if (l0 > 0)
+							if (l0 != string::npos)
 							{
 								s = str.substr(0, l0);
 								string s0 = str.substr(l0 + 1, string::npos);
