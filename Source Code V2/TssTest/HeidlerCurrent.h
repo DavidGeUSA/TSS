@@ -2,11 +2,15 @@
 #include "../Tss/FieldSourceTss.h"
 #include "../FileUtil/taskFile.h"
 
+#define HEILDER_USE_HIGHORDER "HEILDER.USE.HIGHER.ORDER"
+
 class HeidlerCurrent :
 	virtual public FieldSourceTss
 {
 private:
 	double factor;//space factor
+	//
+	bool useHigherOrder; //apply time derivatives and space curls
 	//
 	double c0;
 	double t11, t12;

@@ -20,6 +20,8 @@ Allrights reserved by David Ge
 #define POINT_EH "POINT.EH"
 //specify field component, can be 1 for x, 2 for y or 3 for z
 #define FIELD_COMPONENT "FIELD.COMPONENT"
+//specify end time steps for combining CSV output files into one file
+#define SIM_ENDTIMESTEPS "SIM.ENDTIMESTEPS"
 
 typedef enum {
 	FIELD_X = 1,
@@ -44,3 +46,4 @@ int testHeilderCurrentDT2(TaskFile *taskConfig, char *dataFolder, fnProgressRepo
 int makePointTimeFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int createFieldComponentLines(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
+int combineCsvFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);

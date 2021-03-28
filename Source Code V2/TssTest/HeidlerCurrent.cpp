@@ -5,6 +5,7 @@ HeidlerCurrent::HeidlerCurrent()
 {
 	//use default values
 	factor = 1;
+	useHigherOrder = false;
 	c0 = 299792458.0; //speed of light
 	n1 = 2.0;
 	t11 = 1.8e-06;
@@ -28,6 +29,7 @@ int HeidlerCurrent::initialize(TaskFile *configs)
 {
 	int ret;
 	factor = configs->getDouble(TP_SPACE_FACTOR, false);
+	useHigherOrder = configs->getBoolean(HEILDER_USE_HIGHORDER, true);
 	ret = configs->getErrorCode();
 	if (ret == ERR_OK)
 	{
@@ -124,6 +126,7 @@ bool HeidlerCurrent::isInSource(unsigned int i, unsigned int j, unsigned int k)
 int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile)
 {
 	int ret = ERR_OK;
+	size_t w;
 	t = tValue;
 	//H += Curl.F.dJm+Curl.G.dJe
 	//E += Curl.U.dJe+Curl.W.dJm
@@ -131,26 +134,25 @@ int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *ef
 	//H += Curl.G.dJe
 	//E += Curl.U.dJe
 	//assume Je is at (0,0,z)
-	if (pams->kmax == 0)
+	if (pams->kmax == 0 || !useHigherOrder)
 	{
-		//G, U: 1X1
+		double hc;
+		//G, U: 1 X 1
 		//H += g[0] * Je
 		//E += u[0] * Je
-		//because Je(x,y,z) = 0, Je only applies to H(0,0,z) and E(0,0,z)
-		//because Je(x,y,z)'s direction points to positive z, Je only applies to H(0,0,z).z and E(0,0,z).z
-		double hc;
-		size_t w;
+		//because Je(x,y,z) = 0 for x != 0 and y !=0, Je only applies to H(0,0,z) and E(0,0,z)
+		//because Je(x,y,z)'s direction points to positive z, Je only applies to H(0,0,z).z and E(0,0,z).z	
 		z = pams->zmin;
 		for (unsigned int k = 0; k <= pams->nz; k++)
 		{
-			w = IDX(i0,j0,k);
+			w = IDX(i0, j0, k);
 			hc = I();
 			hfile[w].z += g0[0] * hc;
 			efile[w].z += u0[0] * hc;
 			z += pams->ds;
 		}
 	}
-	else if (pams->kmax == 1) //estimation order = 2*(kmax+1)=4
+	else if (pams->kmax == 1)
 	{
 		//G, U: 3X3
 		//G: 0   0   0
@@ -162,13 +164,12 @@ int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *ef
 		//H += Curl.G.dJe = Curl(g21*Je+g22*(dJe/dt))
 		//E += Curl.U.dJe = u11*Je+u12*(dJe/dt)+u13*(d^2Je/dt^2) + Curl(Curl(u31*Je))
 		//Curl(Curl(Je) = 0
-		size_t w;
 		double Ivalue, dIdtValue;
 		double IvalueDs, dIdtValueDs;
 		z = pams->zmin;
 		for (unsigned int k = 0; k <= pams->nz; k++)
 		{
-			w = IDX(i0,j0,k);
+			w = IDX(i0, j0, k);
 			//
 			Ivalue = I();
 			dIdtValue = dI_dt();
@@ -184,7 +185,7 @@ int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *ef
 			//             [ 0          ]
 			//g21 = g0[3];  g22=g0[4]
 			hfile[w].x += -g0[3] * IvalueDs - g0[4] * dIdtValueDs;
-			hfile[w].y +=  g0[3] * IvalueDs + g0[4] * dIdtValueDs;
+			hfile[w].y += g0[3] * IvalueDs + g0[4] * dIdtValueDs;
 			//E += u11*Je+u12*(dJe/dt)+u13*(d^2Je/dt^2)
 			//Je=[ 0 ]    dJe/dt=[ 0     ]   d^2Je/dt^2=[ 0         ]
 			//   [ 0 ]           [ 0     ]              [ 0         ]

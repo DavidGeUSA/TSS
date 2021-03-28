@@ -62,6 +62,10 @@ Simulator *createSimulator(MemoryManager *mem, TaskFile *taskConfig, char *dataF
 		tss = pSim->GetSimParameters();
 		//read configurations from the task file
 		Simulator::GetSimStruct(taskConfig, tss);
+		*ret = taskConfig->getErrorCode();
+	}
+	if (*ret == ERR_OK)
+	{
 		tss->mem = mem;
 		tss->mainDataFolder = dataFolder;
 		tss->pams.spaceFactor = taskConfig->getDouble(TP_SPACE_FACTOR, true);
@@ -77,9 +81,6 @@ Simulator *createSimulator(MemoryManager *mem, TaskFile *taskConfig, char *dataF
 			tss->pams.sie *= tss->pams.spaceFactor;
 			tss->pams.sim *= tss->pams.spaceFactor;
 		}
-		//taskConfig->resetErrorCode();
-		//strName = taskConfig->getString(TP_TSS_SIMULATE_CLASS, false);
-		//*ret = taskConfig->getErrorCode();
 		//parameter validations
 		if (tss->mem == NULL)
 		{
@@ -1754,87 +1755,6 @@ int tssSimulation(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fn
 		ret = tssSim->run();
 	}
 	return ret;
-	//TssSimStruct simObj;
-	//Simulator *tssSim = createSimulator(mem, taskConfig, dataFolder, &simObj, &ret);
-	//if (ret != ERR_OK)
-	//{
-	//	return ret;
-	//}
-	//if (simObj.src == NULL)
-	//{
-	//	return ERR_SOURCE_NAME;
-	//}
-	//if (simObj.initFields == NULL)
-	//{
-	//	return ERR_FIELD0_NAME;
-	//}
-	//simObj.reporter = reporter;
-	////parameter validations
-	//if (simObj.mem == NULL)
-	//{
-	//	ret = ERR_MEM_UNKNOWN;
-	//	if (reporter != NULL)
-	//	{
-	//		reporter("missing memory manager", false);
-	//	}
-	//}
-	//if (ret == ERR_OK)
-	//{
-	//	if (simObj.dataFileFolder == NULL)
-	//	{
-	//		ret = ERR_INVALID_PARAMS;
-	//	}
-	//	else
-	//	{
-	//		char dataPath[FILENAME_MAX];
-	//		ret = formFilePath(dataPath, FILENAME_MAX, dataFolder, simObj.dataFileFolder);
-	//		if (ret == ERR_OK)
-	//		{
-	//			if (!DirectoryExists_c(dataPath, &ret))
-	//			{
-	//				if (!CreateDirectoryA(dataPath, NULL))
-	//				{
-	//					ret = ERR_INVALID_DATA_FOLDER;
-	//				}
-	//			}
-	//		}
-	//		if (ret == ERR_OK)
-	//		{
-	//			char taskfilecopy[FILENAME_MAX];
-	//			ret = formFilePath(taskfilecopy, FILENAME_MAX, dataPath, "taskfile.task");
-	//			if (ret == ERR_OK)
-	//			{
-	//				ret = taskConfig->saveToFile(taskfilecopy);
-	//			}
-	//		}
-	//	}
-	//	if (ret != ERR_OK)
-	//	{
-	//		if (reporter != NULL)
-	//		{
-	//			reporter(" missing or invalid data folder name", false);
-	//		}
-	//	}
-	//}
-	////parameters OK
-	//if (ret == ERR_OK)
-	//{
-	//	char *strName = taskConfig->getString(TP_TSS_BOUNDARY_CLASS, true);
-	//	if (strName != NULL && simObj.boundaryCondition == NULL)
-	//	{
-	//		ret = ERR_BOUNDARY_NAME;
-	//	}
-	//	if (ret == ERR_OK)
-	//	{
-	//		//start simulation
-	//		ret = tssSim->initialize(&simObj, taskConfig->getString(TP_TSS_TIME_CLASS, true));
-	//		if (ret == ERR_OK)
-	//		{
-	//			ret = tssSim->run();
-	//		}
-	//	}
-	//}
-	//return ret;
 }
 
 /*
@@ -2570,7 +2490,6 @@ int makePointTimeFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder
 	}
 	simObj = tssSim->GetSimParameters();
 	simObj->reporter = reporter;
-	//tssSim->setParametersWithoutInitialize(&simObj);
 	for (size_t h = 0; h < size; h++)
 	{
 		i = ps[h].i;
@@ -2798,6 +2717,31 @@ int makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolde
 	if (ret == ERR_OK)
 	{
 		ret = tssSim->generateStatisticFile();
+	}
+	return ret;
+}
+
+int combineCsvFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter)
+{
+	int ret = ERR_OK;
+	TssSimStruct *simObj;
+	Simulator *tssSim = createSimulator(mem, taskConfig, dataFolder, &ret);
+	if (ret != ERR_OK)
+	{
+		return ret;
+	}
+	simObj = tssSim->GetSimParameters();
+	simObj->reporter = reporter;
+	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	if (ret == ERR_OK)
+	{
+		size_t count;
+		unsigned *endtimeSteps = taskConfig->getUIntArray(SIM_ENDTIMESTEPS, false, &count);
+		ret = taskConfig->getErrorCode();
+		if (ret == ERR_OK)
+		{
+			ret = tssSim->combineCsvFiles(endtimeSteps, count);
+		}
 	}
 	return ret;
 }
