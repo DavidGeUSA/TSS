@@ -72,6 +72,27 @@ public:
 	unsigned int k;
 }GridNode3Dstruct;
 
+/*
+field elements
+*/
+typedef enum {
+	None = 0,
+	Ex = 1,
+	Ey = 2,
+	Ez = 4,
+	Hx = 8,
+	Hy = 16,
+	Hz = 32,
+}FieldElements;
+
+/*
+specify what to include in an output file
+*/
+typedef struct FieldOutputStruct{
+	FieldElements elements;
+	GridNode3Dstruct point;
+}FieldOutputStruct;
+
 
 /*
 	task parameter name and value
@@ -129,6 +150,7 @@ public:
 	char *getString(const char *name, bool optional);
 	bool getBoolean(const char *name, bool optional);
 	GridNode3Dstruct *getGridNodes(const char *name, bool optional, size_t *size);
+	FieldOutputStruct *getOutputFormats(const char *name, bool optional, unsigned int *count);
 	unsigned *getUIntArray(const char *name, bool optional, size_t *size);
 	int getIntVector(const char *name, bool optional, vector<int> &v);
 };

@@ -56,6 +56,13 @@
 #define ERR_DIR_WORK           1070
 #define ERR_FILE_MAP           1071
 
+//the first error code for exceptions
+#define ERR_CODE_EXCEPT_START     30000
+//the last unused error code for exceptions.
+//every time a new exception code is needed, use this code and update this code by 1 
+#define ERR_CODE_EXCEPT_LAST      30002
+
+
 int formFilePath(char *filepath, size_t size, const char *path, const char *name);
 int getFilename(const char *filepath, char * filename, size_t targetSize);
 int WriteToFile(char *filename, void* data, size_t itemSize, size_t count, int *errCode);
