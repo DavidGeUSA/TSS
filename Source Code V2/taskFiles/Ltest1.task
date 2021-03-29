@@ -1,17 +1,12 @@
 
 //material properties--------------------
-TSS.RHO=0
 TSS.IS_VACUUM=True
-TSS.EPS=
-TSS.MU=
-TSS.SIGMA_E=0
-TSS.SIGMA_M=0
 
 //simulation ----------------------------------
 
 //maximum time steps
-SIM.MAXTIMES=1200000
-SIM.STARTTIME=600000
+SIM.MAXTIMES=700000
+SIM.STARTTIME=0
 
 //time steps before saving fields to files
 TSS.REC_INTERVAL=2000
@@ -19,17 +14,10 @@ TSS.REC_INTERVAL=2000
 //generate a statistics file on finishing the simulation
 TSS.MAKESTATISTICS=true
 
-//the number of threads to be used. default is 1
-SIM.USETHREADS=4
-
 //plugins -------------------------
-TSS.SIMULATE.CLASS=TssSim
 
-//default is TimeTss
-//TSS.TIME.CLASS=TimeTss2Threads
 TSS.TIME.CLASS=TimeTssMultiThreads
-
-//TSS.STATISTICS.CLASS=DivergenceStatisticHeilder
+SIM.USETHREADS=4
 
 TSS.SOURCE.CLASS=HeidlerCurrent
 
@@ -82,7 +70,13 @@ TSS.DS=0.05
 TSS.DT=4e-11
 
 //TSS.COURANT_FACTOR=0.00025
-//--------------------------------
+
+//estimation orders
+//time estimation order = 2*(kmax+1)
+TSS.KMAX=1
+//space estimation order = 2*smax
+TSS.SMAX=2
+//---------------------------------
 
 //for task 370------------------------------------------------------------------
 //from all the data files generate a file containing E and H at following point
@@ -102,10 +96,11 @@ POINT.EH=e
 FIELD.COMPONENT=3
 //------------------------------------------------------------------------------
 
-//estimation orders
-//time estimation order = 2*(kmax+1)
-TSS.KMAX=1
-//space estimation order = 2*smax
-TSS.SMAX=2
-//---------------------------------
+//if it is used then task 370 will not work because no field data files are created except at the last time step--------------------------------------------
+SIM.OUTPUT.CSV=(60,60,2,Ez),(60,60,4,Ez),(60,60,6,Ez),(60,60,8,Ez),(60,60,10,Ez),(60,60,12,Ez),(60,60,14,Ez),(60,60,16,Ez),(60,60,18,Ez),(60,60,20,Ez),(60,60,60,Ez),(60,60,100,Ez),(60,60,200,Ez),(60,60,300,Ez)
 
+//for combing CSV output files
+SIM.ENDTIMESTEPS=300000,400000,500000,600000,700000
+
+//whether to use time derivatives and space curls of the Heilder current
+HEILDER.USE.HIGHER.ORDER=false
