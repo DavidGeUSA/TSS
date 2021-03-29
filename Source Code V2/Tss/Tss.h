@@ -95,6 +95,10 @@ types for Time-Space-Synchronized FDTD algorithm
 
 #define TP_TEST_CASE "SIM.TESTCASE"
 
+//It specifies an array delimited by “:”. Each array item is in a format of “I,j,k,Ex|Ey|Ez|Hx|Hy|Hz”, i.e. “20,11,23,Ez:42:13:21,Hy”, this example will generate 2 CSV files, each line of the CSV file contains two values, time in milliseconds and the specified field value.
+#define SIM_OUTPUT_CSV "SIM.OUTPUT.CSV"
+
+
 /*
 parameters needed for implementing the Perfect Match Layer
 */
