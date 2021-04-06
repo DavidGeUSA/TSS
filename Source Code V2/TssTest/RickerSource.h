@@ -24,5 +24,6 @@ public:
 	virtual int initialize(SimStruct *params);
 	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k);
 	virtual int applySources(double t, size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile);
+	virtual int applyToZrotateSymmetry(double t, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile);
 };
 

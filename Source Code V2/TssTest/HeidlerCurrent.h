@@ -60,5 +60,6 @@ public:
 		apply the Heidler current 
 	*/
 	virtual int applySources(double tValue, size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile);
+	virtual int applyToZrotateSymmetry(double tValue, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile);
 };
 

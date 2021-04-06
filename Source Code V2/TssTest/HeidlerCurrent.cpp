@@ -201,3 +201,92 @@ int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *ef
 	}
 	return ret;
 }
+
+int HeidlerCurrent::applyToZrotateSymmetry(double tValue, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile)
+{
+	int ret = ERR_OK;
+	//size_t w;
+	Point3Dstruct *p;
+	t = tValue;
+	//H += Curl.F.dJm+Curl.G.dJe
+	//E += Curl.U.dJe+Curl.W.dJm
+	//Jm = 0
+	//H += Curl.G.dJe
+	//E += Curl.U.dJe
+	//assume Je is at (0,0,z)
+	if (pams->kmax == 0 || !useHigherOrder)
+	{
+		double hc;
+		//G, U: 1 X 1
+		//H += g[0] * Je
+		//E += u[0] * Je
+		//because Je(x,y,z) = 0 for x != 0 and y !=0, Je only applies to H(0,0,z) and E(0,0,z)
+		//because Je(x,y,z)'s direction points to positive z, Je only applies to H(0,0,z).z and E(0,0,z).z	
+		z = pams->zmin;
+		for (unsigned int k = 0; k <= pams->nz; k++)
+		{
+			//w = IDX(i0, j0, k);
+			hc = I();
+			p = hfile->getFieldOnPlane(i0, k);
+			//hfile[w].z += g0[0] * hc;
+			p->z += g0[0] * hc;
+			p = efile->getFieldOnPlane(i0, k);
+			//efile[w].z += u0[0] * hc;
+			p->z += u0[0] * hc;
+			z += pams->ds;
+		}
+	}
+	else if (pams->kmax == 1)
+	{
+		//G, U: 3X3
+		//G: 0   0   0
+		//   g21 g22 0
+		//   0   0   0
+		//U: u11  u12  u13
+		//   0    0    0
+		//   u31  0    0
+		//H += Curl.G.dJe = Curl(g21*Je+g22*(dJe/dt))
+		//E += Curl.U.dJe = u11*Je+u12*(dJe/dt)+u13*(d^2Je/dt^2) + Curl(Curl(u31*Je))
+		//Curl(Curl(Je) = 0
+		double Ivalue, dIdtValue;
+		double IvalueDs, dIdtValueDs;
+		z = pams->zmin;
+		for (unsigned int k = 0; k <= pams->nz; k++)
+		{
+			//w = IDX(i0, j0, k);
+			//
+			Ivalue = I();
+			dIdtValue = dI_dt();
+			IvalueDs = Ivalue / pams->ds;
+			dIdtValueDs = dIdtValue / pams->ds;
+			//H += g21 * Curl(Je) + g22 * Curl(dJe/dt)
+			//at (x=0,y=0, z):
+			//Curl(Je)    =[-Iz/ds] 
+			//             [ Iz/ds]
+			//             [ 0    ]
+			//Curl(dJe/dt)=[-(dIz/dt)/ds]
+			//             [ (dIz/dt)/ds]
+			//             [ 0          ]
+			//g21 = g0[3];  g22=g0[4]
+			//hfile[w].x += -g0[3] * IvalueDs - g0[4] * dIdtValueDs;
+			//hfile[w].y += g0[3] * IvalueDs + g0[4] * dIdtValueDs;
+			p = hfile->getFieldOnPlane(i0, k);
+			p->x += -g0[3] * IvalueDs - g0[4] * dIdtValueDs;
+			p->y += g0[3] * IvalueDs + g0[4] * dIdtValueDs;
+			//E += u11*Je+u12*(dJe/dt)+u13*(d^2Je/dt^2)
+			//Je=[ 0 ]    dJe/dt=[ 0     ]   d^2Je/dt^2=[ 0         ]
+			//   [ 0 ]           [ 0     ]              [ 0         ]
+			//   [ I ]           [ dI/dt ]              [ d^2I/dt^2 ]
+			//efile[w].z += u0[0] * Ivalue + u0[1] * dIdtValue + u0[2] * d2I_dt2();
+			p = efile->getFieldOnPlane(i0, k);
+			p->z += u0[0] * Ivalue + u0[1] * dIdtValue + u0[2] * d2I_dt2();
+			//
+			z += pams->ds;
+		}
+	}
+	else
+	{
+		ret = ERR_NOT_IMPLEMENT;
+	}
+	return ret;
+}

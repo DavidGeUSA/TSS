@@ -79,3 +79,24 @@ int RickerSource::applySources(double t, size_t tIndex, Point3Dstruct *efile, Po
 	}
 	return ret;
 }
+
+int RickerSource::applyToZrotateSymmetry(double t, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile)
+{
+	int ret = ERR_OK;
+	//H = C.F.dJm + C.G.dJe + ...
+	//E = C.U.dJe + C.W.dJm + ...
+	//
+	//g[0] = 0
+	//u[0]*Je
+	//apply at center
+	//int i = pams->nx / 2;
+	//int j = pams->ny / 2;
+	//int k = pams->nz / 2;
+	double arg;
+	arg = M_PI * ((courant * (double)tIndex - 0.0) / ppw - 1.0);
+	arg = arg * arg;
+	arg = (1.0 - 2.0 * arg) * exp(-arg);
+	//efile[w0].z += arg;
+	(efile->getFieldOnPlane(i0, k0))->z += arg;
+	return ret;
+}
