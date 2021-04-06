@@ -737,5 +737,34 @@ int TimeTssBase::writeCoefficientsToFile(char *file, unsigned int maxTimeSteps, 
 	return ret;
 }
 
-
+int TimeTssBase::saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave)
+{
+	int ret = ERR_OK;
+	size_t cc = spacePointCount();
+	FILE *fp = NULL;
+	ret = openfileWrite(filename, &fp);
+	if (ret != ERR_OK || fp == NULL)
+	{
+		if (ret == ERR_OK)
+		ret = ERR_FILE_OPEN_WRIT_EACCES;
+	}
+	else
+	{
+		size_t sizew; 
+		if (fieldToSave == Field_E)
+		{
+			sizew = fwrite(getRawMemoryE(), sizeof(Point3Dstruct), cc, fp);
+		}
+		else
+		{
+			sizew = fwrite(getRawMemoryH(), sizeof(Point3Dstruct), cc, fp);
+		}
+		fclose(fp);
+		if (sizew != cc)
+		{
+			ret = ERR_FILE_WRITE_LESS;
+		}
+	}
+	return ret;
+}
 

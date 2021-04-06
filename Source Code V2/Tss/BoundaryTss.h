@@ -7,6 +7,8 @@ Allrights reserved by David Ge
 ********************************************************************/
 #include "Tss.h"
 #include "Space.h"
+#include "TimeTssBase.h"
+#include "RotateSymmetryField.h"
 #include "../EMField/Plugin.h"
 /*
   boundary condition. default is PEMC
@@ -26,6 +28,7 @@ private:
 	bool useDivergence;          //true:use divergence constraint
 	Point3Dstruct *efield;
 	Point3Dstruct* hfield;
+	unsigned int ic;             //nx/2, for z-rotate-symmetry
 	//work variables
 	size_t a0, am, aw;
 protected:
@@ -44,5 +47,7 @@ public:
 	virtual int setSpace(Space *spaceModule);
 	//
 	virtual int apply(Point3Dstruct *E, Point3Dstruct* H);
+	virtual int applyToZrotateSymmetry(RotateSymmetryField *E, RotateSymmetryField *H);
+	int applyBoundaryToFields(TimeTssBase *timeModule);
 };
 

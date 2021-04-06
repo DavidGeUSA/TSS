@@ -6,6 +6,7 @@ Allrights reserved by David Ge
 field source
 ********************************************************************/
 #include "FieldSourceTss.h"
+#include "TimeTssBase.h"
 
 #include <boost/multiprecision/cpp_dec_float.hpp>
 
@@ -232,3 +233,18 @@ int FieldSourceTss::onInitialized(void *e0, void *m0)
 	return ret;
 }
 
+int FieldSourceTss::applySourceToFields(TimeTssBase *timeModule)
+{
+	if (timeModule->FieldType() == Field_type_3D)
+	{
+		return applySources(timeModule->GetTimeValue(), timeModule->GetTimeIndex(), timeModule->GetFieldE(), timeModule->GetFieldH());
+	}
+	else if (timeModule->FieldType() == Field_type_z_rotateSymmetry)
+	{
+		return applyToZrotateSymmetry(timeModule->GetTimeValue(), timeModule->GetTimeIndex(), timeModule->GetFieldZrotateSymmetryE(), timeModule->GetFieldZrotateSymmetryH());
+	}
+	else
+	{
+		return ERR_SOURCE_NOT_SUPPORT;
+	}
+}

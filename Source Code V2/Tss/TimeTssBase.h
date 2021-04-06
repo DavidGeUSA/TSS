@@ -11,6 +11,7 @@ base class for time advancement estimation module
 #include "FieldSourceTss.h"
 #include "Space.h"
 #include "PmlTss.h"
+#include "RotateSymmetryField.h"
 
 #include "../ProcessMonitor/workProcess.h"
 
@@ -51,6 +52,7 @@ protected:
 public:
 	TimeTssBase();
 	virtual ~TimeTssBase();
+	virtual FIELD_TYPE FieldType(){ return Field_type_3D; }
 	
 	virtual void startThreads(){}
 	virtual void removeThreads(){}
@@ -76,10 +78,18 @@ public:
 	Point3Dstruct *GetFieldH(){ return H; }
 	Point3Dstruct *GetFieldE(){ return E; }
 	//
+	virtual size_t spacePointCount(){ return (pams->nx + 1)*(pams->ny + 1)*(pams->nz + 1); }
+	virtual Point3Dstruct *getRawMemoryE(){ return E; }
+	virtual Point3Dstruct *getRawMemoryH(){ return H; }
+	virtual RotateSymmetryField *GetFieldZrotateSymmetryH(){ return NULL; }
+	virtual RotateSymmetryField *GetFieldZrotateSymmetryE(){ return NULL; }
+	//
 	virtual int GetFirstCurls()=0;
 	virtual int GetNextCurls()=0;
 	Point3Dstruct *GetCurrentCurlH(){ return curlH; }
 	Point3Dstruct *GetCurrentCurlE(){ return curlE; }
+	//
+	virtual int saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave);
 	//
 	//for Yee-style algorithms
 	virtual bool needModifyFieldsForStatistics(){ return false; }

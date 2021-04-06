@@ -6,12 +6,17 @@ Allrights reserved by David Ge
 
 ********************************************************************/
 #include "Tss.h"
+//#include "TimeTssBase.h"
+#include "RotateSymmetryField.h"
 #include "../EMField/Plugin.h"
 #include "../FileUtil/taskFile.h"
 
 #define I_ih(i, h) ((h)*emMax+(i))
 #define Sr_ih(i, h) ((h)*srcDim+(i))
 #define IDX(i,j,k) ((k) + nz1 * ((j) + ny1 * (i)))
+
+class TimeTssBase;
+
 /*
 	form field source
 */
@@ -58,5 +63,7 @@ public:
 	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k){ return true; }
 	//major function
 	virtual int applySources(double t,size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile){ return 0; }
+	virtual int applyToZrotateSymmetry(double t, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile){ return 0; }
+	int applySourceToFields(TimeTssBase *timeModule);
 };
 

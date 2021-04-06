@@ -10,6 +10,7 @@ Modifications
 Date            Author      Description
 ---------------------------------------------
 2021-03-06      David Ge    Linux compatibility
+2021-04-03		David Ge	Support rotation symmetry
 ********************************************************************/
 
 #ifdef __linux__ 
@@ -42,7 +43,7 @@ typedef struct LoopWorkStruct{
 */
 class LoopWorkDivider
 {
-private:
+protected:
 	unsigned int nx;
 	unsigned int ny;
 	unsigned int nz;
@@ -51,10 +52,18 @@ private:
 public:
 	LoopWorkDivider();
 	~LoopWorkDivider();
-	void initializeDivider(unsigned int nx0,unsigned int ny0, unsigned int nz0, unsigned int n);
+	virtual void initializeDivider(unsigned int nx0,unsigned int ny0, unsigned int nz0, unsigned int n);
 	unsigned int Count(){ return N; }
 	unsigned int StartIndex(unsigned int i){ return works[i].StartIndex; }
 	unsigned int EndIndex(unsigned int i){ return works[i].EndIndex; }
 	size_t StartIndexOneDim(unsigned int i){ return works[i].StartOneDimIndex; }
+};
+
+class LoopWorkDividerSymmetryZ :virtual public LoopWorkDivider
+{
+public:
+	LoopWorkDividerSymmetryZ();
+	~LoopWorkDividerSymmetryZ();
+	virtual void initializeDivider(unsigned int nx0, unsigned int ny0, unsigned int nz0, unsigned int n);
 };
 

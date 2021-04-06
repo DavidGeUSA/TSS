@@ -7,6 +7,7 @@ Allrights reserved by David Ge
 #include "Tss.h"
 #include "Simulator.h"
 #include "DivergenceStatistic.h"
+#include "RotateSymmetryField.h"
 #include "../FileUtil/fileutil.h"
 #include "../ProcessMonitor/ProcessMonitor.h"
 
@@ -678,43 +679,62 @@ int Simulator::outputToCSVfiles()
 		size_t valueSize = 120;
 		char buff[1024];
 		char valueBuf[120];
+		Point3Dstruct *ef;
+		Point3Dstruct *hf;
 		Point3Dstruct *efield = timeAdv->GetFieldE();
 		Point3Dstruct *hfield = timeAdv->GetFieldH();
+		RotateSymmetryField *ezr = timeAdv->GetFieldZrotateSymmetryE();
+		RotateSymmetryField *hzr = timeAdv->GetFieldZrotateSymmetryH();
 		for (unsigned int h = 0; h < simObj.numOutputFiles; h++)
 		{
 			if (csvFiles[h] != NULL)
 			{
 				sprintf_1(buff, buffSize, "%g", timeAdv->GetTimeValue());
-				w = space.Idx(simObj.outputFiles[h].point.i, simObj.outputFiles[h].point.j, simObj.outputFiles[h].point.k);
+				if (timeAdv->FieldType() == Field_type_3D)
+				{
+					w = space.Idx(simObj.outputFiles[h].point.i, simObj.outputFiles[h].point.j, simObj.outputFiles[h].point.k);
+					ef = &(efield[w]);
+					hf = &(hfield[w]);
+				}
+				else if (timeAdv->FieldType() == Field_type_z_rotateSymmetry)
+				{
+					w = ezr->Idx(simObj.outputFiles[h].point.i, simObj.outputFiles[h].point.k);
+					ef = ezr->getFieldOnPlane(w);
+					hf = hzr->getFieldOnPlane(w);
+				}
+				else
+				{
+					throw;
+				}
 				if (simObj.outputFiles[h].elements & Ex)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", efield[w].x);
+					sprintf_1(valueBuf, valueSize, ",%g", ef->x);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				if (simObj.outputFiles[h].elements & Ey)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", efield[w].y);
+					sprintf_1(valueBuf, valueSize, ",%g", ef->y);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				if (simObj.outputFiles[h].elements & Ez)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", efield[w].z);
+					sprintf_1(valueBuf, valueSize, ",%g", ef->z);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				//
 				if (simObj.outputFiles[h].elements & Hx)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].x);
+					sprintf_1(valueBuf, valueSize, ",%g", hf->x);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				if (simObj.outputFiles[h].elements & Hy)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].y);
+					sprintf_1(valueBuf, valueSize, ",%g", hf->y);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				if (simObj.outputFiles[h].elements & Hz)
 				{
-					sprintf_1(valueBuf, valueSize, ",%g", hfield[w].z);
+					sprintf_1(valueBuf, valueSize, ",%g", hf->z);
 					strcat_0(buff, buffSize, valueBuf);
 				}
 				strcat_0(buff, buffSize, "\n");
@@ -777,14 +797,16 @@ int Simulator::saveFieldsToFiles()
 		ret = formDataFilename(filename, "e", "dat", datafileindex);
 		if (ret == ERR_OK)
 		{
-			ret = saveFieldToFile(timeAdv->GetFieldE(), filename);
+			//ret = saveFieldToFile(timeAdv->GetFieldE(), filename);
+			ret = timeAdv->saveFieldToFile(filename, Field_E);
 		}
 		if (ret == ERR_OK)
 		{
 			ret = formDataFilename(filename, "h", "dat", datafileindex);
 			if (ret == ERR_OK)
 			{
-				ret = saveFieldToFile(timeAdv->GetFieldH(), filename);
+				//ret = saveFieldToFile(timeAdv->GetFieldH(), filename);
+				ret = timeAdv->saveFieldToFile(filename, Field_H);
 			}
 		}
 	}
@@ -875,14 +897,14 @@ int Simulator::run()
 			//apply source first
 			if (simObj.src != NULL)
 			{
-				ret = simObj.src->applySources(timeAdv->GetTimeValue(), timeAdv->GetTimeIndex(), timeAdv->GetFieldE(), timeAdv->GetFieldH());
+				ret = simObj.src->applySourceToFields(timeAdv);
 			}
 			//apply boundary conditions next
 			if (ret == ERR_OK)
 			{
 				if (simObj.boundaryCondition != NULL)
 				{
-					ret = simObj.boundaryCondition->apply(timeAdv->GetFieldE(), timeAdv->GetFieldH());
+					ret = simObj.boundaryCondition->applyBoundaryToFields(timeAdv);
 				}
 			}
 			if (ret == ERR_OK)
@@ -956,14 +978,14 @@ int Simulator::run()
 			//apply source first
 			if (simObj.src != NULL)
 			{
-				ret = simObj.src->applySources(timeAdv->GetTimeValue(), timeAdv->GetTimeIndex(), timeAdv->GetFieldE(), timeAdv->GetFieldH());
+				ret = simObj.src->applySourceToFields(timeAdv);
 			}
 			//apply boundary conditions next
 			if (ret == ERR_OK)
 			{
 				if (simObj.boundaryCondition != NULL)
 				{
-					ret = simObj.boundaryCondition->apply(timeAdv->GetFieldE(), timeAdv->GetFieldH());
+					ret = simObj.boundaryCondition->applyBoundaryToFields(timeAdv);
 				}
 			}
 			if (ret != ERR_OK)

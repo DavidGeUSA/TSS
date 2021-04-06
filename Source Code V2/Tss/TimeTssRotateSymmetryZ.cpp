@@ -1,42 +1,46 @@
 /*******************************************************************
 Author: David Ge (dge893@gmail.com, aka Wei Ge)
-Last modified: 11/21/2020
+Last modified: 04/03/2021
 Allrights reserved by David Ge
 
-time advancement estimation module, use multiple threads
+time advancement estimation module with rotation symmetry, use multiple threads
 ********************************************************************/
-#include "TimeTssMultiThreads.h"
+#include "TimeTssRotateSymmetryZ.h"
+
 
 #include "ThreadPool.h"
 
-TimeTssMultiThreads::TimeTssMultiThreads()
+TimeTssRotateSymmetryZ::TimeTssRotateSymmetryZ()
 {
-	workE = NULL;
-	workH = NULL;
 	pool = NULL;
 	retH = 0; retE = 0;
 	workCount = 0;
 	curl_OneE = NULL;
 	curl_OneH = NULL;
+	v1 = NULL;
+	v2 = NULL;
+	wk = NULL;
+	curlZE = NULL;
+	curlZH = NULL;
+	pNextE = NULL;
+	pNextH = NULL;
 }
 
 
-TimeTssMultiThreads::~TimeTssMultiThreads()
+TimeTssRotateSymmetryZ::~TimeTssRotateSymmetryZ()
 {
 	cleanup();
 }
 
-void TimeTssMultiThreads::cleanup()
+void TimeTssRotateSymmetryZ::cleanup()
 {
 	TimeTssBase::cleanup();
-	if (workE != NULL)
-	{
-		FreeMemory(workE); workE = NULL;
-	}
-	if (workH != NULL)
-	{
-		FreeMemory(workH); workH = NULL;
-	}
+	work0E.cleanup();
+	work0H.cleanup();
+	work1E.cleanup();
+	work1H.cleanup();
+	vE.cleanup();
+	vH.cleanup();
 	if (curl_OneE != NULL)
 	{
 		for (unsigned int i = 0; i < workCount; i++)
@@ -56,33 +60,68 @@ void TimeTssMultiThreads::cleanup()
 	removeThreads();
 	workCount = 0;
 }
-int TimeTssMultiThreads::initFields(FieldsSetter* f0)
+int TimeTssRotateSymmetryZ::initFields(FieldsSetter* f0)
 {
 	int ret = TimeTssBase::initFields(f0);
 	if (ret == ERR_OK)
 	{
-		if (workE != NULL)
-		{
-			FreeMemory(workE); workE = NULL;
-		}
-		workE = (Point3Dstruct *)AllocateMemory(fieldMemorySize);
-		if (workE == NULL)
-		{
-			ret = ERR_OUTOFMEMORY;
-		}
+		ret = vH.initialVirtualField(pams, _mem);
 	}
 	if (ret == ERR_OK)
 	{
-		if (workH != NULL)
+		ret = vE.initialVirtualField(pams, _mem);
+	}
+	if (ret == ERR_OK)
+	{
+		double x = pams->xmin;
+		double z;
+		Point3Dstruct ef;
+		Point3Dstruct hf;
+		size_t w = 0;
+		ic = pams->nx / 2;
+		for (unsigned int i = 0; i <= ic; i++)
 		{
-			FreeMemory(workH); workH = NULL;
-		}
-		workH = (Point3Dstruct *)AllocateMemory(fieldMemorySize);
-		if (workH == NULL)
-		{
-			ret = ERR_OUTOFMEMORY;
+			z = pams->zmin;
+			for (unsigned int k = 0; k <= pams->nz; k++)
+			{
+				f0->SetFields(x, 0, z, &ef, &hf);
+				vE.setFieldOnPlane(w, &ef);
+				vH.setFieldOnPlane(w, &hf);
+				z += pams->ds;
+				w++;
+			}
+			x += pams->ds;
 		}
 	}
+	//allocate work memories
+	if (ret == ERR_OK)
+	{
+		work0E.cleanup();
+		ret = work0E.initialVirtualField(pams, _mem);
+	}
+	if (ret == ERR_OK)
+	{
+		work0H.cleanup();
+		ret = work0H.initialVirtualField(pams,_mem);
+	}
+	if (ret == ERR_OK)
+	{
+		work1E.cleanup();
+		ret = work1E.initialVirtualField(pams, _mem);
+	}
+	if (ret == ERR_OK)
+	{
+		work1H.cleanup();
+		ret = work1H.initialVirtualField(pams, _mem);
+	}
+	if (ret == ERR_OK)
+	{
+		curlZE = &work0E;
+		curlZH = &work0H;
+		pNextE = &work1E;
+		pNextH = &work1H;
+	}
+	//arrange threads
 	if (ret == ERR_OK)
 	{
 		if (pams->threads > 1)
@@ -95,12 +134,12 @@ int TimeTssMultiThreads::initFields(FieldsSetter* f0)
 		}
 		workCountN1 = workCount - 1;
 		divider.initializeDivider(pams->nx, pams->ny, pams->nz, workCount);
-		curl_OneE = new CurlOne *[workCount];
-		curl_OneH = new CurlOne *[workCount];
+		curl_OneE = new CurlOneSymmetryZ *[workCount];
+		curl_OneH = new CurlOneSymmetryZ *[workCount];
 		for (unsigned int i = 0; i < workCount; i++)
 		{
-			curl_OneE[i] = new CurlOne();
-			curl_OneH[i] = new CurlOne();
+			curl_OneE[i] = new CurlOneSymmetryZ();
+			curl_OneH[i] = new CurlOneSymmetryZ();
 			curl_OneE[i]->setSpaceRange(pams->nx, pams->ny, pams->nz);
 			curl_OneH[i]->setSpaceRange(pams->nx, pams->ny, pams->nz);
 			curl_OneE[i]->setThreadWork(divider.StartIndex(i), divider.EndIndex(i), divider.StartIndexOneDim(i), i);
@@ -110,14 +149,14 @@ int TimeTssMultiThreads::initFields(FieldsSetter* f0)
 	return ret;
 }
 
-void TimeTssMultiThreads::startThreads()
+void TimeTssRotateSymmetryZ::startThreads()
 {
 	if (pool == NULL)
 	{
 		pool = new ThreadPool(pams->threads);
 	}
 }
-void TimeTssMultiThreads::removeThreads()
+void TimeTssRotateSymmetryZ::removeThreads()
 {
 	if (pool != NULL)
 	{
@@ -126,59 +165,59 @@ void TimeTssMultiThreads::removeThreads()
 	}
 }
 
-inline int TimeTssMultiThreads::GetFirstCurls()
+inline int TimeTssRotateSymmetryZ::GetFirstCurls()
 {
 	for (unsigned int th = 0; th < workCount; th++)
 	{
-		curl_OneE[th]->setFieldsMemory(E, curlE);
-		curl_OneH[th]->setFieldsMemory(H, curlH);
+		curl_OneE[th]->setFieldsMemory(&vE, curlZE);
+		curl_OneH[th]->setFieldsMemory(&vH, curlZH);
 	}
 	for (unsigned int th = 0; th < workCount; th++)
 	{
-		pool->enqueue(std::bind(&CurlOne::calculateCurl, curl_OneE[th]));
+		pool->enqueue(std::bind(&CurlOneSymmetryZ::calculateCurl, curl_OneE[th]));
 		if (th == workCountN1)
 		{
 			curl_OneH[th]->calculateCurl(); //use the main thread
 		}
 		else
 		{
-			pool->enqueue(std::bind(&CurlOne::calculateCurl, curl_OneH[th]));
+			pool->enqueue(std::bind(&CurlOneSymmetryZ::calculateCurl, curl_OneH[th]));
 		}
 	}
 	pool->wait();
 	return 0;
 }
-inline int TimeTssMultiThreads::GetNextCurls()
+inline int TimeTssRotateSymmetryZ::GetNextCurls()
 {
 	for (unsigned int th = 0; th < workCount; th++)
 	{
-		curl_OneE[th]->setFieldsMemory(curlE, workE);
-		curl_OneH[th]->setFieldsMemory(curlH, workH);
+		curl_OneE[th]->setFieldsMemory(curlZE, pNextE);
+		curl_OneH[th]->setFieldsMemory(curlZH, pNextH);
 	}
 	for (unsigned int th = 0; th < workCount; th++)
 	{
-		pool->enqueue(std::bind(&CurlOne::calculateCurl, curl_OneE[th]));
+		pool->enqueue(std::bind(&CurlOneSymmetryZ::calculateCurl, curl_OneE[th]));
 		if (th == workCountN1)
 		{
 			curl_OneH[th]->calculateCurl(); //use the main thread
 		}
 		else
 		{
-			pool->enqueue(std::bind(&CurlOne::calculateCurl, curl_OneH[th]));
+			pool->enqueue(std::bind(&CurlOneSymmetryZ::calculateCurl, curl_OneH[th]));
 		}
 	}
 	pool->wait();
 	//
-	wk = workE;
-	workE = curlE;
-	curlE = wk;
+	wk = pNextE;
+	pNextE = curlZE;
+	curlZE = wk;
 	//
-	wk = workH;
-	workH = curlH;
-	curlH = wk;
+	wk = pNextH;
+	pNextH = curlZH;
+	curlZH = wk;
 	return 0;
 }
-int TimeTssMultiThreads::AdvanceOneStep()
+int TimeTssRotateSymmetryZ::AdvanceOneStep()
 {
 	int ret = ERR_OK;
 	h = 0;
@@ -197,20 +236,20 @@ int TimeTssMultiThreads::AdvanceOneStep()
 	//Appy curl-0 and curl-1
 	for (unsigned int th = 0; th < workCount; th++)
 	{
-		pool->enqueue(std::bind(&TimeTssMultiThreads::apply1stCurlE, this, th));
+		pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply1stCurlE, this, th));
 		if (th == workCountN1)
 		{
 			apply1stCurlH(th); //use the main thread
 		}
 		else
 		{
-			pool->enqueue(std::bind(&TimeTssMultiThreads::apply1stCurlH, this, th));
+			pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply1stCurlH, this, th));
 		}
 	}
 	pool->wait();
 	if (pml.usePML())
 	{
-		pml.apply1stCurl(E, H, curlE, curlH);
+		pml.apply1stCurlZrotateSymmetry(&vE, &vH, curlZE, curlZH);
 	}
 	h++;
 	while (h <= pams->kmax)
@@ -231,20 +270,20 @@ int TimeTssMultiThreads::AdvanceOneStep()
 		//apply curls{2h}
 		for (unsigned int th = 0; th < workCount; th++)
 		{
-			pool->enqueue(std::bind(&TimeTssMultiThreads::apply2ndCurlE, this, th));
+			pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply2ndCurlE, this, th));
 			if (th == workCountN1)
 			{
 				apply2ndCurlH(th); //use the main thread
 			}
 			else
 			{
-				pool->enqueue(std::bind(&TimeTssMultiThreads::apply2ndCurlH, this, th));
+				pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply2ndCurlH, this, th));
 			}
 		}
 		pool->wait();
 		if (pml.usePML() && h < 2)//only 4-th order PML is implemented
 		{
-			pml.apply2ndCurl(E, H, curlE, curlH);
+			pml.apply2ndCurlZrotateSymmetry(&vE, &vH, curlZE, curlZH);
 		}
 		//calculate curls{2h+1}
 		ret = GetNextCurls();
@@ -262,23 +301,24 @@ int TimeTssMultiThreads::AdvanceOneStep()
 		//apply curls{2h+1}
 		for (unsigned int th = 0; th < workCount; th++)
 		{
-			pool->enqueue(std::bind(&TimeTssMultiThreads::apply3rdCurlE, this, th));
+			pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply3rdCurlE, this, th));
 			if (th == workCountN1)
 			{
 				apply3rdCurlH(th); //use the main thread
 			}
 			else
 			{
-				pool->enqueue(std::bind(&TimeTssMultiThreads::apply3rdCurlH, this, th));
+				pool->enqueue(std::bind(&TimeTssRotateSymmetryZ::apply3rdCurlH, this, th));
 			}
 		}
 		pool->wait();
 		if (pml.usePML() && h < 2) //only 4-th order PML is implemented
 		{
-			pml.apply3rdCurl(E, H, curlE, curlH);
+			pml.apply3rdCurlZrotateSymmetry(&vE, &vH, curlZE, curlZH);
 		}
 		h++;
 	}
 	//
 	return ret;
 }
+////////////////////////////////////////////////////////////////////////////

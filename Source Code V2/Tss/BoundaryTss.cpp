@@ -32,6 +32,7 @@ int BoundaryTss::setSpace(Space *spaceModule)
 	space = spaceModule;
 	ds = space->DS();
 	nx = space->Nx(); ny = space->Ny(); nz = space->Nz();
+	ic = nx / 2;
 	smax = space->SMAX();
 	M = 2 * smax;
 	nx1 = nx + 1; ny1 = ny + 1; nz1 = nz + 1;
@@ -208,4 +209,69 @@ int BoundaryTss::apply(Point3Dstruct *E, Point3Dstruct* H)
 		//
 	}
 	return ret;
+}
+int BoundaryTss::applyToZrotateSymmetry(RotateSymmetryField *E, RotateSymmetryField *H)
+{
+	int ret = ERR_OK;
+	if (E == NULL || H == NULL)
+		ret = ERR_INVALID_CALL;
+	else
+	{
+		Point3Dstruct *boundary;
+		//unsigned int j = ic;
+		//(y, z) planes reduce to one line (0,ic,0)-(0,ic,nz): i=0, j=ic, k=0,1,...,nz
+		for (unsigned int k = 0; k <= nz; k++)
+		{
+			//w = Idx(0, j, k);
+			boundary = E->getFieldOnPlane(0, k);
+			boundary->y = 0.0;
+			boundary->z = 0.0;
+			boundary = H->getFieldOnPlane(0, k);
+			boundary->y = 0.0;
+			boundary->z = 0.0;
+			//
+		}
+		//
+		//(x, z) planes do not exist
+		//
+		//(x, y) planes reduce to two lines:
+		//     (0,ic,0) - (ic,ic,0)
+		//     (0,ic,nz) - (ic,ic,nz)
+		for (unsigned int i = 0; i <= ic; i++)
+		{
+			//w = Idx(i, j, 0);
+			boundary = E->getFieldOnPlane(i, 0);
+			boundary->x = 0.0;
+			boundary->y = 0.0;
+			boundary = H->getFieldOnPlane(i, 0);
+			boundary->x = 0.0;
+			boundary->y = 0.0;
+			//
+			//w = Idx(i, j, nz);
+			boundary = E->getFieldOnPlane(i, nz);
+			boundary->x = 0.0;
+			boundary->y = 0.0;
+			boundary = H->getFieldOnPlane(i, nz);
+			boundary->x = 0.0;
+			boundary->y = 0.0;
+			//
+		}
+		//
+	}
+	return ret;
+}
+int BoundaryTss::applyBoundaryToFields(TimeTssBase *timeModule)
+{
+	if (timeModule->FieldType() == Field_type_3D)
+	{
+		return apply(timeModule->GetFieldE(), timeModule->GetFieldH());
+	}
+	else if (timeModule->FieldType() == Field_type_z_rotateSymmetry)
+	{
+		return applyToZrotateSymmetry(timeModule->GetFieldZrotateSymmetryE(), timeModule->GetFieldZrotateSymmetryH());
+	}
+	else
+	{
+		return ERR_BOUNDARY_NOT_SUPPORT;
+	}
 }

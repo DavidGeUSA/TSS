@@ -5,6 +5,9 @@ Allrights reserved by David Ge
 
 implementation of perfect match layer
 
+Date		Author			Description
+--------------------------------------------------------------------
+04/03/2021	David Ge		Support z-rotation symmetry
 ********************************************************************/
 #include "PmlTss.h"
 #include "Tss.h"
@@ -28,6 +31,7 @@ int PmlTss::initialize(SimStruct *p)
 		throw;
 	}
 	pams = p;
+	ic = pams->nx / 2;
 	//
 	pmlLLL = p->pml.Pxl || p->pml.Pyl || p->pml.Pzl;
 	pmlHLL = p->pml.Pxh || p->pml.Pyl || p->pml.Pzl;
@@ -636,6 +640,12 @@ void PmlTss::calculateSideCoefficients()
 		}
 	}
 }
+/*
+	the coefficients are defined for the 2-D area; 
+	the coefficients are the same along the edge length;
+	when using the coefficients, pay attention to the sequence of the 2-D indexing used here;
+	the same 2-D indexing must be used when applying the coefficients
+*/
 void PmlTss::calculateEdgeCoefficients()
 {
 	PmlCoefficients **coeff;
@@ -686,6 +696,9 @@ void PmlTss::calculateEdgeCoefficients()
 		}
 	}
 }
+/*
+	there is one set of coefficients for every point in a corner cube
+*/
 void PmlTss::calculateCornerCoefficients()
 {
 	PmlCoefficients **coeff;
@@ -716,6 +729,15 @@ void PmlTss::calculateCornerCoefficients()
 }
 ////////////////////////////////////////////////////////////////////////
 ///apply PML 
+/// in each PML range, there are 3 indexes:
+/// wS is the 1-D index into the 3-D range memory used for summations,
+/// wF is the 1-D index into the 3-D field memory
+/// w is a 1-D index into a 3-D, 2-D or 1-D coefficients array.
+/// for corner cubes, w==wS.
+/// for edge bars, check function calculateEdgeCoefficients to make sure
+///		that the same 2-D indexing is used;
+/// for side boards, check function calculateSideCoefficients to make sure
+///     that the same 1-D indexing is used
 ////////////////////////////////////////////////////////////////////////
 /////apply curl to corners//////////////////////////////////////////////
 /*
@@ -881,9 +903,10 @@ void PmlTss::apply3rdCurlCorners(Point3Dstruct *efield, Point3Dstruct *hfield, P
 }
 /////end of corners//////////////////////////////////////////////////////////////////////
 /////apply curls to edges////////////////////////////////////////////////////////////////
+//check calculateEdgeCoefficients to make sure the same 2-D indexing is used
 void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t wS, wF, w;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -901,23 +924,25 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = edgbars[h].kStart();
 		k1 = edgbars[h].kEnd();
 		w = 0;
+		wS = 0;
 		if (edgbars[h].parallelX())
 		{
 			for (unsigned int j = j0; j <= j1; j++)
 			{
 				for (unsigned int k = k0; k <= k1; k++)
 				{
+					//for all i, coefficients are the same
 					for (unsigned int i = i0; i <= i1; i++)
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -927,8 +952,10 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++; //index into summation memory
 					}
-					w++;
+					w++; //index into coefficients memory
 				}
 			}
 		}
@@ -942,13 +969,13 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -958,6 +985,8 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -973,13 +1002,13 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -989,6 +1018,8 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -998,7 +1029,7 @@ void PmlTss::apply1stCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 }
 void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t w, wF, wS;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -1016,6 +1047,7 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = edgbars[h].kStart();
 		k1 = edgbars[h].kEnd();
 		w = 0;
+		wS = 0;
 		if (edgbars[h].parallelX())
 		{
 			for (unsigned int j = j0; j <= j1; j++)
@@ -1026,13 +1058,13 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1042,6 +1074,8 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1057,13 +1091,13 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1073,6 +1107,8 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1088,13 +1124,13 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1104,6 +1140,8 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1113,7 +1151,7 @@ void PmlTss::apply2ndCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 }
 void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t w, wF, wS;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -1131,6 +1169,7 @@ void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = edgbars[h].kStart();
 		k1 = edgbars[h].kEnd();
 		w = 0;
+		wS = 0; //1-D index into the range
 		if (edgbars[h].parallelX())
 		{
 			for (unsigned int j = j0; j <= j1; j++)
@@ -1141,22 +1180,24 @@ void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1172,22 +1213,24 @@ void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1203,22 +1246,24 @@ void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 					w++;
 				}
@@ -1231,7 +1276,7 @@ void PmlTss::apply3rdCurlEdges(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 /////sides///////////////////////////////////////////////////////////////////////////////
 void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t w, wF, wS;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -1249,6 +1294,7 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = sides[h].kStart();
 		k1 = sides[h].kEnd();
 		w = 0;
+		wS = 0;
 		if (sides[h].sideX())
 		{
 			for (unsigned int i = i0; i <= i1; i++)
@@ -1259,13 +1305,13 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -1275,6 +1321,8 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1290,13 +1338,13 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -1306,6 +1354,8 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1321,13 +1371,13 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
@@ -1337,6 +1387,8 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
 						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
 						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1346,7 +1398,7 @@ void PmlTss::apply1stCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 }
 void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t w, wF, wS;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -1364,6 +1416,7 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = sides[h].kStart();
 		k1 = sides[h].kEnd();
 		w = 0;
+		wS = 0;
 		if (sides[h].sideX())
 		{
 			for (unsigned int i = i0; i <= i1; i++)
@@ -1374,13 +1427,13 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1390,6 +1443,8 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1405,13 +1460,13 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1421,6 +1476,8 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1436,13 +1493,13 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].u.x * eCurl[wF].x;
-						sumE[w].y += coeff[1][w].u.y * eCurl[wF].y;
-						sumE[w].z += coeff[1][w].u.z * eCurl[wF].z;
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].u.x * hCurl[wF].x;
-						sumH[w].y += coeff[1][w].u.y * hCurl[wF].y;
-						sumH[w].z += coeff[1][w].u.z * hCurl[wF].z;
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
 						//
 						//fields updated next
 						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
@@ -1452,6 +1509,8 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
 						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
 						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1461,7 +1520,7 @@ void PmlTss::apply2ndCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 }
 void PmlTss::apply3rdCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl)
 {
-	size_t w, wF;
+	size_t w, wF, wS;
 	Point3Dstruct *sumH;
 	Point3Dstruct *sumE;
 	PmlCoefficients **coeff;
@@ -1479,6 +1538,7 @@ void PmlTss::apply3rdCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 		k0 = sides[h].kStart();
 		k1 = sides[h].kEnd();
 		w = 0;
+		wS = 0;
 		if (sides[h].sideX())
 		{
 			for (unsigned int i = i0; i <= i1; i++)
@@ -1489,22 +1549,24 @@ void PmlTss::apply3rdCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1520,22 +1582,24 @@ void PmlTss::apply3rdCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1551,22 +1615,24 @@ void PmlTss::apply3rdCurlSides(Point3Dstruct *efield, Point3Dstruct *hfield, Poi
 					{
 						wF = IdxField(i, j, k);
 						//integrations updated first before fields are changed
-						sumE[w].x += coeff[1][w].f.x * hCurl[wF].x;
-						sumE[w].y += coeff[1][w].f.y * hCurl[wF].y;
-						sumE[w].z += coeff[1][w].f.z * hCurl[wF].z;
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
 						//
-						sumH[w].x += coeff[1][w].g.x * eCurl[wF].x;
-						sumH[w].y += coeff[1][w].g.y * eCurl[wF].y;
-						sumH[w].z += coeff[1][w].g.z * eCurl[wF].z;
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
 						//
 						//fields updated next
-						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
-						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
-						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
 						//
-						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
-						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
-						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
 					}
 				}
 				w++;
@@ -1781,5 +1847,912 @@ void PmlTss::writeCoefficientsToFile(FILE *fileHandle)
 			}
 		}
 	}
+}
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+/// z-rotation symmetry
+///   only edge bars and side boards, no corner cubes
+//////////////////////////////////////////////////////////////////////////////
+/////apply curls to edges////////////////////////////////////////////////////////////////
+void PmlTss::apply1stCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < EDGCOUNT; h++)
+	{
+		sumH = edgbars[h].SmH();
+		sumE = edgbars[h].SmE();
+		coeff = edgbars[h].Coefficients();
+		i0 = edgbars[h].iStart();
+		i1 = edgbars[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply edges at low-end
+		}
+		//j0 = edgbars[h].jStart();
+		//j1 = edgbars[h].jEnd();
+		k0 = edgbars[h].kStart();
+		k1 = edgbars[h].kEnd();
+		w = 0;
+		wS = 0;
+		if (edgbars[h].parallelX())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					for (unsigned int i = i0; i <= i1; i++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
+						efield[wF].y = coeff[0][w].w.y * efield[wF].y + coeff[0][w].e.y * hCurl[wF].y;
+						efield[wF].z = coeff[0][w].w.z * efield[wF].z + coeff[0][w].e.z * hCurl[wF].z;
+						//
+						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
+						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
+						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+		else if (edgbars[h].parallelY())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//wF = IdxField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
+					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
+					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
+					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
+					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
+					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
+					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
+					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
+					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+					w++;
+				}
+			}
+		}
+		else if (edgbars[h].parallelZ())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int j = j0; j <= j1; j++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
+						efield[wF].y = coeff[0][w].w.y * efield[wF].y + coeff[0][w].e.y * hCurl[wF].y;
+						efield[wF].z = coeff[0][w].w.z * efield[wF].z + coeff[0][w].e.z * hCurl[wF].z;
+						//
+						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
+						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
+						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+	}
+}
+void PmlTss::apply2ndCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < EDGCOUNT; h++)
+	{
+		sumH = edgbars[h].SmH();
+		sumE = edgbars[h].SmE();
+		coeff = edgbars[h].Coefficients();
+		i0 = edgbars[h].iStart();
+		i1 = edgbars[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply edges of low-end
+		}
+		//j0 = edgbars[h].jStart();
+		//j1 = edgbars[h].jEnd();
+		k0 = edgbars[h].kStart();
+		k1 = edgbars[h].kEnd();
+		w = 0;
+		wS = 0;
+		if (edgbars[h].parallelX())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					for (unsigned int i = i0; i <= i1; i++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
+						efield[wF].y += coeff[1][w].w.y * eCurl[wF].y;
+						efield[wF].z += coeff[1][w].w.z * eCurl[wF].z;
+						//
+						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
+						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
+						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+		else if (edgbars[h].parallelY())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].u.x * ec->x;
+					sumE[wS].y += coeff[1][w].u.y * ec->y;
+					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					//
+					sumH[wS].x += coeff[1][w].u.x * hc->x;
+					sumH[wS].y += coeff[1][w].u.y * hc->y;
+					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].w.x * ec->x;
+					v0.y = ef->y + coeff[1][w].w.y * ec->y;
+					v0.z = ef->y + coeff[1][w].w.z * ec->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].w.x * hc->x;
+					v0.y = hf->y + coeff[1][w].w.y * hc->y;
+					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+					w++;
+				}
+			}
+		}
+		else if (edgbars[h].parallelZ())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int j = j0; j <= j1; j++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
+						efield[wF].y += coeff[1][w].w.y * eCurl[wF].y;
+						efield[wF].z += coeff[1][w].w.z * eCurl[wF].z;
+						//
+						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
+						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
+						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+	}
+}
+void PmlTss::apply3rdCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < EDGCOUNT; h++)
+	{
+		sumH = edgbars[h].SmH();
+		sumE = edgbars[h].SmE();
+		coeff = edgbars[h].Coefficients();
+		i0 = edgbars[h].iStart();
+		i1 = edgbars[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply lower-end edges
+		}
+		//j0 = edgbars[h].jStart();
+		//j1 = edgbars[h].jEnd();
+		k0 = edgbars[h].kStart();
+		k1 = edgbars[h].kEnd();
+		w = 0;
+		wS = 0;
+		if (edgbars[h].parallelX())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					for (unsigned int i = i0; i <= i1; i++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						//
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+		else if (edgbars[h].parallelY())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].f.x * hc->x;
+					sumE[wS].y += coeff[1][w].f.y * hc->y;
+					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[1][w].g.x * ec->x;
+					sumH[wS].y += coeff[1][w].g.y * ec->y;
+					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
+					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
+					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
+					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
+					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+					w++;
+				}
+			}
+		}
+		else if (edgbars[h].parallelZ())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				for (unsigned int j = j0; j <= j1; j++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[wS].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[wS].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[wS].z;
+						//
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[wS].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[wS].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[wS].z;
+						//
+						wS++;
+					}
+					w++;
+				}
+			}
+			*/
+		}
+	}
+}
+/////end of edges////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////sides///////////////////////////////////////////////////////////////////////////////
+void PmlTss::apply1stCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < SIDECOUNT; h++)
+	{
+		sumH = sides[h].SmH();
+		sumE = sides[h].SmE();
+		coeff = sides[h].Coefficients();
+		i0 = sides[h].iStart();
+		i1 = sides[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply lower-end side board
+		}
+		//j0 = sides[h].jStart();
+		//j1 = sides[h].jEnd();
+		k0 = sides[h].kStart();
+		k1 = sides[h].kEnd();
+		w = 0;
+		wS = 0;
+		if (sides[h].sideX())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				//for (unsigned int j = j0; j <= j1; j++)
+				//{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
+					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
+					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
+					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
+					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
+					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
+					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
+					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
+					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+				}
+				//}
+				w++;
+			}
+		}
+		else if (sides[h].sideY())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[0][w].u.x * efield[wF].x + coeff[0][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[0][w].u.y * efield[wF].y + coeff[0][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[0][w].u.z * efield[wF].z + coeff[0][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[0][w].u.x * hfield[wF].x + coeff[0][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[0][w].u.y * hfield[wF].y + coeff[0][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[0][w].u.z * hfield[wF].z + coeff[0][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x = coeff[0][w].w.x * efield[wF].x + coeff[0][w].e.x * hCurl[wF].x;
+						efield[wF].y = coeff[0][w].w.y * efield[wF].y + coeff[0][w].e.y * hCurl[wF].y;
+						efield[wF].z = coeff[0][w].w.z * efield[wF].z + coeff[0][w].e.z * hCurl[wF].z;
+						//
+						hfield[wF].x = coeff[0][w].w.x * hfield[wF].x + coeff[0][w].h.x * eCurl[wF].x;
+						hfield[wF].y = coeff[0][w].w.y * hfield[wF].y + coeff[0][w].h.y * eCurl[wF].y;
+						hfield[wF].z = coeff[0][w].w.z * hfield[wF].z + coeff[0][w].h.z * eCurl[wF].z;
+						//
+						wS++;
+					}
+				}
+				w++;
+			}
+			*/
+		}
+		else if (sides[h].sideZ())
+		{
+			for (unsigned int k = k0; k <= k1; k++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
+					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
+					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
+					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
+					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
+					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
+					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
+					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
+					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+				}
+				w++;
+			}
+		}
+	}
+}
+void PmlTss::apply2ndCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < SIDECOUNT; h++)
+	{
+		sumH = sides[h].SmH();
+		sumE = sides[h].SmE();
+		coeff = sides[h].Coefficients();
+		i0 = sides[h].iStart();
+		i1 = sides[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply lower-end side board
+		}
+		//j0 = sides[h].jStart();
+		//j1 = sides[h].jEnd();
+		k0 = sides[h].kStart();
+		k1 = sides[h].kEnd();
+		w = 0;
+		wS = 0;
+		if (sides[h].sideX())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				//for (unsigned int j = j0; j <= j1; j++)
+				//{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].u.x * ec->x;
+					sumE[wS].y += coeff[1][w].u.y * ec->y;
+					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					//
+					sumH[wS].x += coeff[1][w].u.x * hc->x;
+					sumH[wS].y += coeff[1][w].u.y * hc->y;
+					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].w.x * ec->x;
+					v0.y = ef->y + coeff[1][w].w.y * ec->y;
+					v0.z = ef->z + coeff[1][w].w.z * ec->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].w.x * hc->x;
+					v0.y = hf->y + coeff[1][w].w.y * hc->y;
+					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+				}
+				//}
+				w++;
+			}
+		}
+		else if (sides[h].sideY())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].u.x * eCurl[wF].x;
+						sumE[wS].y += coeff[1][w].u.y * eCurl[wF].y;
+						sumE[wS].z += coeff[1][w].u.z * eCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].u.x * hCurl[wF].x;
+						sumH[wS].y += coeff[1][w].u.y * hCurl[wF].y;
+						sumH[wS].z += coeff[1][w].u.z * hCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].w.x * eCurl[wF].x;
+						efield[wF].y += coeff[1][w].w.y * eCurl[wF].y;
+						efield[wF].z += coeff[1][w].w.z * eCurl[wF].z;
+						//
+						hfield[wF].x += coeff[1][w].w.x * hCurl[wF].x;
+						hfield[wF].y += coeff[1][w].w.y * hCurl[wF].y;
+						hfield[wF].z += coeff[1][w].w.z * hCurl[wF].z;
+						///
+						wS++;
+					}
+				}
+				w++;
+			}
+			*/
+		}
+		else if (sides[h].sideZ())
+		{
+			for (unsigned int k = k0; k <= k1; k++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].u.x * ec->x;
+					sumE[wS].y += coeff[1][w].u.y * ec->y;
+					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					//
+					sumH[wS].x += coeff[1][w].u.x * hc->x;
+					sumH[wS].y += coeff[1][w].u.y * hc->y;
+					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].w.x * ec->x;
+					v0.y = ef->y + coeff[1][w].w.y * ec->y;
+					v0.z = ef->z + coeff[1][w].w.z * ec->z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].w.x * hc->x;
+					v0.y = hf->y + coeff[1][w].w.y * hc->y;
+					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+				}
+				w++;
+			}
+		}
+	}
+}
+void PmlTss::apply3rdCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	size_t w, wS;
+	Point3Dstruct *sumH;
+	Point3Dstruct *sumE;
+	PmlCoefficients **coeff;
+	unsigned int i0, i1, k0, k1;
+	//
+	unsigned int j = ic; //y=0
+	Point3Dstruct *ef;
+	Point3Dstruct *hf;
+	Point3Dstruct *hc;
+	Point3Dstruct *ec;
+	Point3Dstruct v0;
+	//
+	for (int h = 0; h < SIDECOUNT; h++)
+	{
+		sumH = sides[h].SmH();
+		sumE = sides[h].SmE();
+		coeff = sides[h].Coefficients();
+		i0 = sides[h].iStart();
+		i1 = sides[h].iEnd();
+		if (i0 > ic)
+		{
+			continue; //only apply lower-end side board
+		}
+		//j0 = sides[h].jStart();
+		//j1 = sides[h].jEnd();
+		k0 = sides[h].kStart();
+		k1 = sides[h].kEnd();
+		w = 0;
+		if (sides[h].sideX())
+		{
+			for (unsigned int i = i0; i <= i1; i++)
+			{
+				//for (unsigned int j = j0; j <= j1; j++)
+				//{
+				for (unsigned int k = k0; k <= k1; k++)
+				{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].f.x * hc->x;
+					sumE[wS].y += coeff[1][w].f.y * hc->y;
+					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[1][w].g.x * ec->x;
+					sumH[wS].y += coeff[1][w].g.y * ec->y;
+					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
+					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
+					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
+					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
+					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+				}
+				//}
+				w++;
+			}
+		}
+		else if (sides[h].sideY())
+		{
+			/* z-rotation symmetry does not include this case
+			for (unsigned int j = j0; j <= j1; j++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					for (unsigned int k = k0; k <= k1; k++)
+					{
+						wF = IdxField(i, j, k);
+						//integrations updated first before fields are changed
+						sumE[wS].x += coeff[1][w].f.x * hCurl[wF].x;
+						sumE[wS].y += coeff[1][w].f.y * hCurl[wF].y;
+						sumE[wS].z += coeff[1][w].f.z * hCurl[wF].z;
+						//
+						sumH[wS].x += coeff[1][w].g.x * eCurl[wF].x;
+						sumH[wS].y += coeff[1][w].g.y * eCurl[wF].y;
+						sumH[wS].z += coeff[1][w].g.z * eCurl[wF].z;
+						//
+						//fields updated next
+						efield[wF].x += coeff[1][w].e.x * hCurl[wF].x + sumE[w].x;
+						efield[wF].y += coeff[1][w].e.y * hCurl[wF].y + sumE[w].y;
+						efield[wF].z += coeff[1][w].e.z * hCurl[wF].z + sumE[w].z;
+						//
+						hfield[wF].x += coeff[1][w].h.x * eCurl[wF].x + sumH[w].x;
+						hfield[wF].y += coeff[1][w].h.y * eCurl[wF].y + sumH[w].y;
+						hfield[wF].z += coeff[1][w].h.z * eCurl[wF].z + sumH[w].z;
+						//
+						wS++;
+					}
+				}
+				w++;
+			}
+			*/
+		}
+		else if (sides[h].sideZ())
+		{
+			for (unsigned int k = k0; k <= k1; k++)
+			{
+				for (unsigned int i = i0; i <= i1; i++)
+				{
+					//for (unsigned int j = j0; j <= j1; j++)
+					//{
+					//wF = IdxField(i, j, k);
+					ef = efield->getField(i, j, k);
+					hf = hfield->getField(i, j, k);
+					hc = hCurl->getField(i, j, k);
+					ec = eCurl->getField(i, j, k);
+					//integrations updated first before fields are changed
+					sumE[wS].x += coeff[1][w].f.x * hc->x;
+					sumE[wS].y += coeff[1][w].f.y * hc->y;
+					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					//
+					sumH[wS].x += coeff[1][w].g.x * ec->x;
+					sumH[wS].y += coeff[1][w].g.y * ec->y;
+					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					//
+					//fields updated next
+					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
+					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
+					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					efield->setField(i, j, k, &v0);
+					//
+					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
+					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
+					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					hfield->setField(i, j, k, &v0);
+					//
+					wS++;
+					//}
+				}
+				w++;
+			}
+		}
+	}
+}
+/////end of sides////////////////////////////////////////////////////////////////////////
+/////Apply curls/////////////////////////////////////////////////////////////////////////
+/*
+Appy curl-0 and curl-1
+*/
+void PmlTss::apply1stCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	apply1stCurlEdgesZrotateSymmetry(efield, hfield, eCurl, hCurl);
+	apply1stCurlSidesZrotateSymmetry(efield, hfield, eCurl, hCurl);
+}
+
+/*
+Appy curl-2
+*/
+void PmlTss::apply2ndCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	apply2ndCurlEdgesZrotateSymmetry(efield, hfield, eCurl, hCurl);
+	apply2ndCurlSidesZrotateSymmetry(efield, hfield, eCurl, hCurl);
+}
+
+/*
+Appy curl-3
+*/
+void PmlTss::apply3rdCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl)
+{
+	apply3rdCurlEdgesZrotateSymmetry(efield, hfield, eCurl, hCurl);
+	apply3rdCurlSidesZrotateSymmetry(efield, hfield, eCurl, hCurl);
 }
 //////////////////////////////////////////////////////////////////////////////

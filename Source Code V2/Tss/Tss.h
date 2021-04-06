@@ -27,9 +27,17 @@ types for Time-Space-Synchronized FDTD algorithm
 #define ERR_MAXTIME_START  10015
 #define ERR_START_INTERVAL 10016
 
+#define ERR_SOURCE_NOT_SUPPORT   10017
+#define ERR_BOUNDARY_NOT_SUPPORT 10018
+
 #define ERR_PML_LN_BIG     10101
 #define ERR_PML_POWER_0    10102
 #define ERR_PML_MAGNITUDE  10103
+
+#define ERR_CYLINTRICAL_Y_N_X   10200
+#define ERR_CYLINTRICAL_NX_ODD  10201
+#define ERR_CYLINTRICAL_XMIN_0  10202
+#define ERR_CYLINTRICAL_CENTER  10203
 
 //configuration names to be used in a task file
 #define TP_TSS_SIMULATE_CLASS  "TSS.SIMULATE.CLASS" //class name of field simulator
@@ -98,6 +106,17 @@ types for Time-Space-Synchronized FDTD algorithm
 //It specifies an array delimited by “:”. Each array item is in a format of “I,j,k,Ex|Ey|Ez|Hx|Hy|Hz”, i.e. “20,11,23,Ez:42:13:21,Hy”, this example will generate 2 CSV files, each line of the CSV file contains two values, time in milliseconds and the specified field value.
 #define SIM_OUTPUT_CSV "SIM.OUTPUT.CSV"
 
+typedef enum
+{
+	Field_E = 1,
+	Field_H = 2,
+}FIELD_EMTYPE;
+
+typedef enum
+{
+	Field_type_3D               = 1,
+	Field_type_z_rotateSymmetry = 2,
+}FIELD_TYPE;
 
 /*
 parameters needed for implementing the Perfect Match Layer

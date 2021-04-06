@@ -256,6 +256,7 @@ int PmlCorner::onInitializePmlRange()
 			}
 			for (unsigned int h = 0; h <= pams->kmax; h++)
 			{
+				//the same number of sets of coefficients as the number of the spaces
 				coeff[h] = (PmlCoefficients *)malloc(count*sizeof(PmlCoefficients));
 				if (coeff[h] == NULL)
 				{
@@ -565,6 +566,7 @@ int PmlEdgeBar::onInitializePmlRange()
 			}
 			for (unsigned int h = 0; h <= pams->kmax; h++)
 			{
+				//coefficients are defined for the 2-D area; the coefficients are the same along the length 
 				coeff[h] = (PmlCoefficients *)malloc(areaPoints*sizeof(PmlCoefficients));
 				if (coeff[h] == NULL)
 				{
@@ -790,6 +792,8 @@ int PmlSide::onInitializePmlRange()
 			}
 			for (unsigned int h = 0; h <= pams->kmax; h++)
 			{
+				//the coefficients are defined along the depth of the PML; 
+				//the coefficients are the same for the whole area at the same PML depth
 				coeff[h] = (PmlCoefficients *)malloc(pams->pml.Ln*sizeof(PmlCoefficients));
 				if (coeff[h] == NULL)
 				{

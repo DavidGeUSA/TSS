@@ -6,12 +6,15 @@ Allrights reserved by David Ge
 
 implementation of perfect match layer
 
+Date		Author			Description
+--------------------------------------------------------------------
+04/03/2021	David Ge		Support z-rotation symmetry
 ********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "PmlRange.h"
-
+#include "RotateSymmetryField.h"
 
 /*
 	Perfect Match Layer
@@ -31,7 +34,9 @@ private:
 	double dt2;// = pams->dt*pams->dt / 2.0;
 	double dt3;// = pams->dt*pams->dt*pams->dt / 6.0;
 	double eu; // = 1.0 / (pams->eps * pams->mu);
-
+	//
+	unsigned int ic; //nx/2, for supporting z-rotation symmetry
+	//
 	//PML ranges ============================
 	PmlCorner corners[CORNERCOUNT]; //8 corners
 	PmlEdgeBar edgbars[EDGCOUNT];   //12 edge bars
@@ -150,6 +155,19 @@ public:
 	void apply1stCurl(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl);
 	void apply2ndCurl(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl);
 	void apply3rdCurl(Point3Dstruct *efield, Point3Dstruct *hfield, Point3Dstruct *eCurl, Point3Dstruct *hCurl);
-
+	//
+	//z-rotation symmetry=====================================================================================================================================
+	void apply1stCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply2ndCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply3rdCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	//
+	void apply1stCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply2ndCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply3rdCurlSidesZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	//
+	void apply1stCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply2ndCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	void apply3rdCurlZrotateSymmetry(RotateSymmetryField *efield, RotateSymmetryField *hfield, RotateSymmetryField *eCurl, RotateSymmetryField *hCurl);
+	//=========================================================================================================================================================
 };
 
