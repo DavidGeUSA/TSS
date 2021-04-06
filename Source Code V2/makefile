@@ -105,8 +105,12 @@ Tsslib:
 	$(CC) $(CFLAGS) -c -o lib/TimeTssMultiThreads.o Tss/TimeTssMultiThreads.cpp
 	$(CC) $(CFLAGS) -c -o lib/TimeYee.o Tss/TimeYee.cpp
 	$(CC) $(CFLAGS) -c -o lib/Tss.o Tss/Tss.cpp
+	$(CC) $(CFLAGS) -c -o lib/VirtualField.o Tss/VirtualField.cpp
+	$(CC) $(CFLAGS) -c -o lib/TimeTssRotateSymmetryZ.o Tss/TimeTssRotateSymmetryZ.cpp
+	$(CC) $(CFLAGS) -c -o lib/CurlOneSymmetryZ.o Tss/CurlOneSymmetryZ.cpp
+	$(CC) $(CFLAGS) -c -o lib/RotateSymmetryField.o Tss/RotateSymmetryField.cpp
 	$(CC) $(CFLAGS) -c -o lib/Simulator.o Tss/Simulator.cpp
-	ar cr lib/libTss.a lib/BoundaryTss.o lib/Curl.o lib/Curl_x.o  lib/Curl_y.o lib/Curl_z.o lib/CurlOne.o lib/CurlThreeA.o lib/CurlThreeB.o lib/CurlTwo.o lib/CurlTwo_0.o lib/DivergenceStatistic.o lib/FieldSourceTss.o lib/FieldsSetter.o lib/LoopWorkDivider.o lib/PmlRange.o lib/PmlTss.o lib/Space.o lib/ThreadPool.o lib/TimeTss.o lib/TimeTss2Threads.o lib/TimeTss4th.o lib/TimeTssBase.o lib/TimeTssMultiThreads.o lib/TimeYee.o lib/Tss.o lib/Simulator.o
+	ar cr lib/libTss.a lib/BoundaryTss.o lib/Curl.o lib/Curl_x.o  lib/Curl_y.o lib/Curl_z.o lib/CurlOne.o lib/CurlThreeA.o lib/CurlThreeB.o lib/CurlTwo.o lib/CurlTwo_0.o lib/DivergenceStatistic.o lib/FieldSourceTss.o lib/FieldsSetter.o lib/LoopWorkDivider.o lib/PmlRange.o lib/PmlTss.o lib/Space.o lib/ThreadPool.o lib/TimeTss.o lib/TimeTss2Threads.o lib/TimeTss4th.o lib/TimeTssBase.o lib/TimeTssMultiThreads.o lib/TimeYee.o lib/Tss.o lib/VirtualField.o lib/CurlOneSymmetryZ.o lib/RotateSymmetryField.o lib/TimeTssRotateSymmetryZ.o lib/Simulator.o
 	ranlib lib/libTss.a
 
 FieldDataComparerlib:
