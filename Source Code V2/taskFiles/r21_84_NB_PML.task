@@ -35,12 +35,12 @@ TSS.TIMEMATRIXFILE=timeMatrix.txt
 TSS.SPACEMATRIXFILE=spacematrix.txt
 
 //sub folder under folder specified  by command line parameter /D
-TSS.DATAFOLDER=R21_84_NB_PML12_0_01
+TSS.DATAFOLDER=R21a_84_NB_PML12_1
 
 //forming E field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_e_<file index>.dat 
 //forming H field file name: <BASEFILE>_TSS_smax<smax>_kmax<kmax>_h_<file index>.dat
 //<file index>=0,1,2,...
-TSS.REC_BASEFILE=R21_84_NB_PML12_0_01
+TSS.REC_BASEFILE=R21a_84_NB_PML12_1
 
 //computation domain --------------
 TSS.NX=84
@@ -69,8 +69,8 @@ SIM.USE_RAM=true
 //PML
 PML.DISABLE=false
 PML.THICK=12
-PML.ALPHA=0.01
-PML.BETA=0.01
+PML.ALPHA=1
+PML.BETA=1
 PML.X.LOW=true
 PML.X.HIGH=true
 PML.Y.LOW=true

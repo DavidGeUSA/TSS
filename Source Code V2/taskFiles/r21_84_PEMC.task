@@ -65,3 +65,6 @@ TSS.SMAX=2
 //---------------------------------
 //use RAM instead of hard disk
 SIM.USE_RAM=true
+
+//PML
+PML.DISABLE=true
