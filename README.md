@@ -1,7 +1,9 @@
 # Open Source EM Field FDTD Software
-What is new:
-Bug fix in PML code
-Version 2 code uploaded: https://github.com/DavidGeUSA/TSS/tree/master/Source%20Code%20V2
+ What is new:
+
+  Bug fix in PML code.
+
+  Version 2 code uploaded: https://github.com/DavidGeUSA/TSS/tree/master/Source%20Code%20V2
 
 The purpose of this software is for doing digital experiments on electromagnetic fields, such as simulations, statistics, FFT, 3D/2D drawings, etc.  It is not intended to be a software product; rather, it uses open source to provide a framework and tools for you to experiment your own ideas and coding.
 
