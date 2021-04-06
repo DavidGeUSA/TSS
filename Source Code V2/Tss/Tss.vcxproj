@@ -140,6 +140,7 @@
     <ClInclude Include="BoundaryTss.h" />
     <ClInclude Include="Curl.h" />
     <ClInclude Include="CurlOne.h" />
+    <ClInclude Include="CurlOneSymmetryZ.h" />
     <ClInclude Include="CurlThreeA.h" />
     <ClInclude Include="CurlThreeB.h" />
     <ClInclude Include="CurlTwo.h" />
@@ -149,6 +150,7 @@
     <ClInclude Include="LoopWorkDivider.h" />
     <ClInclude Include="PmlRange.h" />
     <ClInclude Include="PmlTss.h" />
+    <ClInclude Include="RotateSymmetryField.h" />
     <ClInclude Include="Space.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="TimeTss.h" />
@@ -156,14 +158,17 @@
     <ClInclude Include="TimeTss4th.h" />
     <ClInclude Include="TimeTssBase.h" />
     <ClInclude Include="TimeTssMultiThreads.h" />
+    <ClInclude Include="TimeTssRotateSymmetryZ.h" />
     <ClInclude Include="TimeYee.h" />
     <ClInclude Include="Tss.h" />
     <ClInclude Include="Simulator.h" />
+    <ClInclude Include="VirtualField.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundaryTss.cpp" />
     <ClCompile Include="Curl.cpp" />
     <ClCompile Include="CurlOne.cpp" />
+    <ClCompile Include="CurlOneSymmetryZ.cpp" />
     <ClCompile Include="CurlThreeA.cpp" />
     <ClCompile Include="CurlThreeB.cpp" />
     <ClCompile Include="CurlTwo.cpp" />
@@ -177,6 +182,7 @@
     <ClCompile Include="LoopWorkDivider.cpp" />
     <ClCompile Include="PmlRange.cpp" />
     <ClCompile Include="PmlTss.cpp" />
+    <ClCompile Include="RotateSymmetryField.cpp" />
     <ClCompile Include="Space.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="TimeTss.cpp" />
@@ -184,9 +190,11 @@
     <ClCompile Include="TimeTss4th.cpp" />
     <ClCompile Include="TimeTssBase.cpp" />
     <ClCompile Include="TimeTssMultiThreads.cpp" />
+    <ClCompile Include="TimeTssRotateSymmetryZ.cpp" />
     <ClCompile Include="TimeYee.cpp" />
     <ClCompile Include="Tss.cpp" />
     <ClCompile Include="Simulator.cpp" />
+    <ClCompile Include="VirtualField.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
