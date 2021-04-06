@@ -1,3 +1,6 @@
+ ##What is new
+ Bug fix in PML coding.
+ Add z-rotation symmetry support.
  
 This version of the FDTD code includes following major changes.
 1. The code works for Windows and for Linux. See https://github.com/DavidGeUSA/TSS/blob/master/TSS_Linux_Windows.pdf
