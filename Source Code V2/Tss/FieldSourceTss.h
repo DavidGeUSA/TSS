@@ -60,7 +60,7 @@ public:
 	double *GetJeE(){ return u0; }
 	double *GetJmE(){ return w0; }
 	//
-	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k){ return true; }
+	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k){ return false; }
 	//major function
 	virtual int applySources(double t,size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile){ return 0; }
 	virtual int applyToZrotateSymmetry(double t, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile){ return 0; }
