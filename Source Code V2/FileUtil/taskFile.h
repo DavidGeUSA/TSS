@@ -132,10 +132,11 @@ private:
 	char *nameBadVal;  //the name with an invalid value
 	//
 	void allocateLines();
-	int getIndexByName(const char *name);
+	
 public:
 	TaskFile(const char *taskfile);
 	~TaskFile();
+	int getIndexByName(const char *name);
 	int saveToFile(char *file);
 	int getErrorCode(){return ret;}
 	void resetErrorCode(void);
