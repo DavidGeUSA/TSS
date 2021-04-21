@@ -498,6 +498,9 @@ int main(int argc, char* argv[])
 				case TASK_COMBINE_CSV_FILES:
 					ret = task373_combineCSVFiles(_mem, taskfile, dataFolder, showProgressReport);
 					break;
+				case TASK_VERIFY_3D_Z_ROTATE:
+					ret = task390_VerifyZrotateSymmetry(_mem, taskfile, dataFolder, showProgressReport, OperationCanceled);
+					break;
 				default:
 					ret = ERR_SIM_TASK_NOCODE;
 					break;
@@ -1021,6 +1024,12 @@ void showError(const char *msg, int err)
 		case ERR_START_INTERVAL:// 10016
 			printf("Parameter error: the Start Time Step is not dividable by the Save Interval. (error=%d)", err);
 			break;
+		case ERR_SOURCE_NOT_SUPPORT://   10017
+			printf("Field source does not support requested field type. (error=%d)", err);
+			break;
+		case ERR_BOUNDARY_NOT_SUPPORT:// 10018
+			printf("Boundary Condition does not support requested field type. (error=%d)", err);
+			break;
 		case ERR_PML_LN_BIG://     10101
 			printf("PML parameter error: the thickness is too large. (error=%d)", err);
 			break;
@@ -1029,6 +1038,18 @@ void showError(const char *msg, int err)
 			break;
 		case ERR_PML_MAGNITUDE://  10103
 			printf("PML parameter error: the maximum magnitude should not be negative. (error=%d)", err);
+			break;
+		case ERR_CYLINTRICAL_Y_N_X://   10200
+			printf("z-rotation symmetry requires nx=ny. (error=%d)", err);
+			break;
+		case ERR_CYLINTRICAL_NX_ODD://  10201
+			printf("z-rotation symmetry requires nx to be even. (error=%d)", err);
+			break;
+		case ERR_CYLINTRICAL_XMIN_0://  10202
+			printf("z-rotation symmetry requires xmin to be negative. (error=%d)", err);
+			break;
+		case ERR_CYLINTRICAL_CENTER://  10203
+			printf("z-rotation symmetry requires that ds * (nx/2) = -xmin. (error=%d)", err);
 			break;
 		default:
 			printf("Unknown error. (error=%d)", err);

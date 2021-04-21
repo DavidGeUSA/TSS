@@ -40,5 +40,6 @@ int task370_makePointTimeFile(MemoryManager *mem, TaskFile *taskConfig, char *da
 int task371_createFieldComponentLines(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int task372_makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int task373_combineCSVFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
+int task390_VerifyZrotateSymmetry(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport);
 
 //

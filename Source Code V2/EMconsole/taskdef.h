@@ -44,6 +44,8 @@
 #define TASK_MAKE_STATISTICS_FILE 372
 #define TASK_COMBINE_CSV_FILES    373
 
+#define TASK_VERIFY_3D_Z_ROTATE   390
+
 /*
 	task definitions.
 	each element:
@@ -78,6 +80,7 @@ TaskInfo tasks[] = {
 	 ,{TASK_MAKE_STATISTICS_FILE,true,  false, "from a set of simulation data files (*e_*.dat files and *h_*.dat files), generate one text file, the file contains field energy and divergences summarized at each time. It requires command line parameters \"/W\", \"/D\". Use the same task file doing the simulation for this task. " }
 	 ,{TASK_COEFFICIENTS_ONLY,   true,  false, "generate coefficients without starting simulation. use a task file to specofy all required parameters. It requires command line parameters \"/W\" and \"/D\"," }
 	 ,{TASK_COMBINE_CSV_FILES,   true,  false, "combine the CSV output files for different time steps into one file. use the same task file for the simulations generating the CSV output files. use \"SIM.ENDTIMESTEPS=t1,t2,...\" to specify the the end-time-step for each CSV file. It requires command line parameters \"/W\" and \"/D\"," }
+	 ,{TASK_VERIFY_3D_Z_ROTATE,  true,  false, "verify fields data files are z-rotation symmetry. use the same task file and command line parameters for the simulations generating the 3D fields files. " }
 };
 
 //

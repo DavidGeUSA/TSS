@@ -1659,6 +1659,15 @@ int task373_combineCSVFiles(MemoryManager *mem, TaskFile *taskConfig, char *data
 	return combineCsvFiles(mem, taskConfig, dataFolder, reporter);
 }
 
+/*
+	verify fields data files are z-rotation symmetry. use the same task file and command line parameters for the simulations generating the 3D fields files.
+*/
+int task390_VerifyZrotateSymmetry(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport)
+{
+	SetupCancelHandler();
+	puts("\r\nVerifying fields data files are z-rotation symmetry. Press Ctrl-C to stop. \r\n Initialize ...\r\n");
+	return verifyZrotateSymmetry(mem, taskConfig, dataFolder, reporter, cancelReport);
+}
 
 
 
