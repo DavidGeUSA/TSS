@@ -8,6 +8,7 @@
 #-------------------------------------------------------------------------------------------
 # 2021-03-11    David Ge       created this makefile to add Linux support.
 #                              Ubuntu 20.04.2 LTS, release 20.04, Codename: focal
+# 2021-04-20    David Ge       added dipole source
 #-------------------------------------------------------------------------------------------
 
 CC = g++
@@ -172,8 +173,9 @@ TssTestlib:
 	$(CC) $(CFLAGS) -c -o lib/RadiusCubic.o TssTest/RadiusCubic.cpp
 	$(CC) $(CFLAGS) -c -o lib/RadiusStatistics.o TssTest/RadiusStatistics.cpp
 	$(CC) $(CFLAGS) -c -o lib/RickerSource.o TssTest/RickerSource.cpp
+	$(CC) $(CFLAGS) -c -o lib/DipoleSourceTss.o TssTest/DipoleSourceTss.cpp
 	$(CC) $(CFLAGS) -c -o lib/TssTest.o TssTest/TssTest.cpp
-	ar cr lib/libTssTest.a lib/BoundaryTssVoid.o lib/CurlXYZ.o lib/CurlXYZ2.o lib/FieldsNull.o lib/GaussianCurl.o lib/GaussianCurlYee.o lib/GaussianTest.o lib/HeidlerCurrent.o lib/PluginInstances.o lib/RadiusCubic.o lib/RadiusStatistics.o lib/RickerSource.o lib/TssTest.o
+	ar cr lib/libTssTest.a lib/BoundaryTssVoid.o lib/CurlXYZ.o lib/CurlXYZ2.o lib/FieldsNull.o lib/GaussianCurl.o lib/GaussianCurlYee.o lib/GaussianTest.o lib/HeidlerCurrent.o lib/PluginInstances.o lib/RadiusCubic.o lib/RadiusStatistics.o lib/RickerSource.o lib/DipoleSourceTss.o lib/TssTest.o
 	ranlib lib/libTssTest.a
 
 EMexe:
