@@ -13,5 +13,6 @@ public:
 	BoundaryTssVoid();
 	~BoundaryTssVoid();
 	virtual int apply(Point3Dstruct *E, Point3Dstruct* H){ return 0; }
+	virtual int applyToZrotateSymmetry(RotateSymmetryField *E, RotateSymmetryField *H){ return 0; }
 };
 

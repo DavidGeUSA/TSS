@@ -204,8 +204,10 @@ Simulator *createSimulator(MemoryManager *mem, TaskFile *taskConfig, char *dataF
 					}
 					else
 					{
-						tss->dvgs = new DivergenceStatistic();
-						*ret = tss->dvgs->initializeByConfig(taskConfig);
+						//default statistics generator
+						//move it to Simulator::initializeSimulator to let the time module do it
+						//tss->dvgs = new DivergenceStatistic3D();
+						//*ret = tss->dvgs->initializeByConfig(taskConfig);
 					}
 				}
 			}
@@ -560,7 +562,7 @@ int testSpaceModule(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, 
 
 	startTime = getTimeTick();
 	reporter("Initializing simulator ...", false);
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret == ERR_OK)
 	{
 		endTime = getTimeTick();
@@ -653,7 +655,7 @@ int testSpaceModule(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, 
 			//
 			crNum = cases[caseIndex];
 			//
-			ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+			ret = tssSim->initializeSimulator(taskConfig);
 			if (ret != ERR_OK)
 			{
 				break;
@@ -1401,7 +1403,7 @@ int testTimeModule(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, f
 	}
 	startTime = getTimeTick();
 	reporter("Initializing simulator ...", false);
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret == ERR_OK)
 	{
 		endTime = getTimeTick();
@@ -1731,7 +1733,7 @@ Simulator *prepareSimulator(MemoryManager *mem, TaskFile *taskConfig, char *data
 			if (*pRet == ERR_OK)
 			{
 				//initialize simulation
-				*pRet = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+				*pRet = tssSim->initializeSimulator(taskConfig);
 			}
 		}
 	}
@@ -1772,7 +1774,7 @@ int createStatisticsForRadiusDataFiles(MemoryManager *mem, TaskFile *taskConfig,
 	{
 		return ret;
 	}
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret != ERR_OK)
 	{
 		return ret;
@@ -1900,7 +1902,7 @@ int createStatisticsInRadiusForCubicDataFiles(MemoryManager *mem, TaskFile *task
 	}
 	simObj = tssSim->GetSimParameters();
 	simObj->reporter = reporter;
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret != ERR_OK)
 	{
 		return ret;
@@ -2713,7 +2715,7 @@ int makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolde
 	}
 	simObj = tssSim->GetSimParameters();
 	simObj->reporter = reporter;
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret == ERR_OK)
 	{
 		ret = tssSim->generateStatisticFile();
@@ -2732,7 +2734,7 @@ int combineCsvFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, 
 	}
 	simObj = tssSim->GetSimParameters();
 	simObj->reporter = reporter;
-	ret = tssSim->initializeSimulator(taskConfig->getString(TP_TSS_TIME_CLASS, true));
+	ret = tssSim->initializeSimulator(taskConfig);
 	if (ret == ERR_OK)
 	{
 		size_t count;
@@ -2741,6 +2743,516 @@ int combineCsvFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, 
 		if (ret == ERR_OK)
 		{
 			ret = tssSim->combineCsvFiles(endtimeSteps, count);
+		}
+	}
+	return ret;
+}
+double relativeError(double v1, double v2)
+{
+	double err = abs(v1 - v2);
+	/*if (err != 0)
+	{
+		if (v1 != 0 && v2 != 0)
+		{
+			double m;
+			if (v1 > v2)
+			{
+				m = v2 / v1;
+			}
+			else
+			{
+				m = v1 / v2;
+			}
+			if (m > 1.0e-10)
+			{
+				double d = sqrt(v1*v1 + v2*v2);
+				if (d > 0)
+				{
+					err = err / d;
+				}
+			}
+		}
+	}*/
+	return err;
+}
+/*
+	map = 0 : negative y-axis
+		  1 : positive y-axis
+		  2 : positive x-axis
+*/
+void EHErrorSum::addErrorMapToAxis(Point3Dstruct *efield, Point3Dstruct *hfield, size_t w0, size_t w1, int map)
+{
+	double vxE=0, vyE=0,vxH=0,vyH=0;
+	if (map == 0)
+	{
+		RotateSymmetryField::mapToNegativeY(efield[w0].x, efield[w0].y, &vxE, &vyE);
+		RotateSymmetryField::mapToNegativeY(hfield[w0].x, hfield[w0].y, &vxH, &vyH);
+	}
+	else if (map == 1)
+	{
+		RotateSymmetryField::mapToPositiveY(efield[w0].x, efield[w0].y, &vxE, &vyE);
+		RotateSymmetryField::mapToPositiveY(hfield[w0].x, hfield[w0].y, &vxH, &vyH);
+	}
+	else if (map == 2)
+	{
+		RotateSymmetryField::mapToPositiveX(efield[w0].x, efield[w0].y, &vxE, &vyE);
+		RotateSymmetryField::mapToPositiveX(hfield[w0].x, hfield[w0].y, &vxH, &vyH);
+	}
+	addError(efield[w1].x, vxE, Field_E);
+	addError(efield[w1].y, vyE, Field_E);
+	addError(efield[w0].z, efield[w1].z, Field_E);
+	//
+	
+	addError(hfield[w1].x, vxH, Field_H);
+	addError(hfield[w1].y, vyH, Field_H);
+	addError(hfield[w0].z, hfield[w1].z, Field_H);
+}
+/*
+	eXaxis, hXaxis: field values on the x-axis
+	eVal,   hVal  : field values on the mapped area
+	i,      j     : point at the mapped area
+*/
+void EHErrorSum::addErrorMapToArea(Point3Dstruct *eXaxis, Point3Dstruct *hXaxis, Point3Dstruct *eVal, Point3Dstruct *hVal, double x, double y)
+{
+	double xv, yv;
+	if (x < 0 && y < 0)
+	{
+		//area III
+		if (eXaxis->y < 0 && eXaxis->x < 0)
+		{
+			RotateSymmetryField::map(eXaxis->x, eXaxis->y, x, y, &xv, &yv);
+			addError(eVal->x, xv, Field_E);
+			addError(eVal->y, yv, Field_E);
+			addError(eXaxis->z, eVal->z, Field_E);
+			if (err > 1)
+			{
+				err = err;
+			}
+		}
+		//
+		if (hXaxis->y < 0 && hXaxis->x < 0)
+		{
+			RotateSymmetryField::map(hXaxis->x, hXaxis->y, x, y, &xv, &yv);
+			addError(hVal->x, xv, Field_H);
+			addError(hVal->y, yv, Field_H);
+			addError(hXaxis->z, hVal->z, Field_H);
+		}
+	}
+}
+/*
+	verify fields data files are z-rotation symmetry. use the same task file and command line parameters for the simulations generating the 3D fields files.
+*/
+int verifyZrotateSymmetry(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport)
+{
+	int ret = ERR_OK;
+	Simulator *tssSim = prepareSimulator(mem, taskConfig, dataFolder, reporter, cancelReport, &ret);
+	if (ret == ERR_OK)
+	{
+		TssSimStruct *simObj = tssSim->GetSimParameters();
+		ret = RotateSymmetryField::IsZrotateSymmetry(&(simObj->pams));
+		if (ret == ERR_OK)
+		{
+			unsigned int i=0, j=0, k=0;
+			unsigned int fileIndex = 0;
+			unsigned int ic = simObj->pams.nx / 2;
+			unsigned int nz1 = simObj->pams.nz + 1;
+			unsigned int ny1 = simObj->pams.ny + 1;
+			unsigned int s0 = 1;
+			unsigned int s1 = 1;
+			RotateSymmetryField ezr;
+			RotateSymmetryField hzr;
+			ret = ezr.initialVirtualField(&(simObj->pams), mem);
+			if (ret == ERR_OK)
+			{
+				ret = hzr.initialVirtualField(&(simObj->pams), mem);
+			}
+			if (ret == ERR_OK)
+			{
+				///////verify fields/////////////////////////////////
+				fileIndex = 0;
+				while (ret == ERR_OK)
+				{
+					ret = tssSim->LoadFieldsFromFiles(fileIndex);
+					if (ret == ERR_OK)
+					{
+						double x, y, z;
+						Point3Dstruct *efield = tssSim->GetFieldE();
+						Point3Dstruct *hfield = tssSim->GetFieldH();
+						EHErrorSum errSum(&(simObj->pams));
+						//
+						x = simObj->pams.xmin;
+						for (i = 0; i < ic; i++) //exclude ic because it is at the center point only mapping to itself
+						{
+							y = simObj->pams.ymin;
+							size_t w0 = 0, w1 = 0, wa = 0;
+							//
+							z = simObj->pams.zmin;
+							for (k = 0; k <= simObj->pams.nz; k++)
+							{
+								double g;
+								bool checkAxis = false;
+								w0 = k + nz1*(ic + ny1*i); //(ic-i, 0, k)
+								g = efield[w0].x*efield[w0].x + efield[w0].y*efield[w0].y + efield[w0].z*efield[w0].z;
+								if (g > 0.00001)
+								{
+									g = g;
+								}
+								if (checkAxis)
+								{
+									//map to negative y-axis
+									w1 = k + nz1*(i + ny1*ic); //(0, ic-i, k)
+									errSum.addErrorMapToAxis(efield, hfield, w0, w1, 0);
+									//map to positive y-axis
+									w1 = k + nz1*(2 * ic - i + ny1*ic); //(0, 2*ic-i, k)
+									errSum.addErrorMapToAxis(efield, hfield, w0, w1, 1);
+									//map to positive x-axis
+									w1 = k + nz1*(ic + ny1*(2 * ic - i)); //(2*ic-i, ic, k)
+									errSum.addErrorMapToAxis(efield, hfield, w0, w1, 2);
+								}
+								//map to area III: (ic-i)^2 = (ic-i1)^2+(ic-j1)^2; 0<(ic-i1)<ic-i; 0<(ic-j1)<ic-i
+								if (fileIndex > 0)
+								{
+									//continue;
+								}
+								Point3Dstruct valE; //efield value at mapped point
+								Point3Dstruct valH; //hfield value at mapped point
+								double xMapped, yMapped; //centerred, from origin
+								//unsigned int r = ic - i;  //radius
+								//for (j = ic-2>i?ic-2:i; j < ic; j++) //exclude the center point
+								j = ic - 2;
+								//point at (i, j) => (x,y):(ic-i, 2) -> r^2=(ic-i)*(ic-i)+4 
+								w0 = k + nz1*(j + ny1*i);
+								unsigned int r2 = (ic - i)*(ic - i) + (ic - j)*(ic - j);
+								double r = sqrt((double)r2); //radius of (i,j)
+								if (r > (double)ic) continue;
+								//purpose: use fields at x-axis (j=ic) to estimate fields at (i,j)
+								//for 4-order curl estimation, we need fields at (i, ic-2), (i, ic-1)
+								//mapping point at x-axis: (x=r, y=0) -> (i=ic-r, j=ic)
+								unsigned int ir0 = (unsigned int)floor(r);
+								unsigned int ir1 = (unsigned int)ceil(r);
+								if (ir0 == ir1)
+								{
+									//perfect mapping
+									w1 = k + nz1*(j + ny1*(ic - ir0)); //perfect mapping
+									valE.x = efield[w1].x;
+									valE.y = efield[w1].y;
+									valE.z = efield[w1].z;
+									valH.x = hfield[w1].x;
+									valH.y = hfield[w1].y;
+									valH.z = hfield[w1].z;
+									xMapped = -((double)ir0)*simObj->pams.ds;
+									yMapped = -((double)(ic - j))*simObj->pams.ds;
+								}
+								else
+								{
+									//use weighted average
+									double f0 = r - (double)ir0;
+									double f1 = (double)ir1 - r;
+									wa = k + nz1*(ic + ny1*(ic - ir0));
+									w1 = k + nz1*(ic + ny1*(ic - ir1));
+									//
+									valE.x = f0 * efield[w1].x + f1 * efield[wa].x;
+									valE.y = f0 * efield[w1].y + f1 * efield[wa].y;
+									valE.z = f0 * efield[w1].z + f1 * efield[wa].z;
+									//
+									valH.x = f0 * hfield[w1].x + f1 * hfield[wa].x;
+									valH.y = f0 * hfield[w1].y + f1 * hfield[wa].y;
+									valH.z = f0 * hfield[w1].z + f1 * hfield[wa].z;
+									//
+									xMapped = -((double)(ic - i))*simObj->pams.ds;
+									yMapped = -((double)(ic - j))*simObj->pams.ds;
+								}
+
+								//valE and valH contain field values at the mapped space point
+								if (g > 0.00001)
+								{
+									g = g;
+								}
+								//if (!averaged)
+								errSum.addErrorMapToArea(&(efield[w0]), &(hfield[w0]), &valE, &valH, xMapped, yMapped);
+								//} //area III: j=0, 1, 2, ..., ic
+								//
+								z += simObj->pams.ds;
+							} //z-loop
+							y += simObj->pams.ds;
+							x += simObj->pams.ds;
+						} //i-loop
+						//
+						printf("\r\n%u: z-symmetry maxE:%g, avgE:%g, maxH:%g, avgH:%g", 
+							fileIndex, errSum.MaxErrorE(), errSum.AverageErrorE(), 
+							errSum.MaxErrorH(), errSum.AverageErrorH());
+						//
+					}
+					else
+					{
+						if (ret == ERR_MEM_OPEN_FILE)
+						{
+							ret = ERR_OK;
+						}
+						break;
+					}
+					fileIndex++;
+				}
+				//////////////////////////////////
+				puts("\r\nVerify the 3D fields data to be z-rotational symmetry:\r\n ");
+				fileIndex = 0;
+				while (ret == ERR_OK && fileIndex > 0)
+				{
+					ret = tssSim->LoadFieldsFromFiles(fileIndex);
+					if (ret == ERR_OK)
+					{
+						size_t ws;
+						double x, y, z;
+						Point3Dstruct valE, valH;
+						double err;
+						double maxErrE = 0, maxErrH = 0;
+						double avgErrE = 0, avgErrH = 0;
+						Point3Dstruct *efield = tssSim->GetFieldE();
+						Point3Dstruct *hfield = tssSim->GetFieldH();
+						//
+						ws = 0;
+						x = simObj->pams.xmin;
+						for (i = 0; i <= simObj->pams.nx; i++)
+						{
+							y = simObj->pams.ymin;
+							for (j = 0; j <= simObj->pams.ny; j++)
+							{
+								//double r = sqrt(x*x + y*y); //map to (x0, 0, z), x0 = -r
+								//double r0 = r / simObj->pams.ds;//i_mapped = ic - r0
+								double r0 = sqrt((double)((ic - i)*(ic - i) + (ic - j)*(ic - j)));
+								unsigned i1 = (unsigned int)ceil(r0);
+								unsigned int i0 = (unsigned int)floor(r0);
+								double d = (double)(i1 - i0);
+								double f1 = 0;
+								double f0 = 1;
+								size_t w0=0, w1=0;
+								//
+								/*double irx = sqrt((double)((ic-i)*(ic-i) + (ic-j)*(ic-j)));
+								unsigned int irx0 = (unsigned int)floor(irx);
+								unsigned int irx1 = (unsigned int)ceil(irx);
+								if (irx0 != i0 || irx1 != i1)
+								{
+									f0 = 1;
+								}*/
+								//
+								if (fileIndex > 2)
+								{
+									f0 = 1;
+								}
+								if (i1 != i0)
+								{
+									f1 = ((double)i1 - r0) / d;
+									f0 = (r0 - (double)i0) / d;
+								}
+								z = simObj->pams.zmin;
+								for (k = 0; k <= simObj->pams.nz; k++)
+								{
+									size_t w = k + nz1*(j + ny1*i);
+									if (w != ws)
+									{
+										throw;
+									}
+									//efield[ws] is at (x,y,z)
+									//from space position (x,y,z) find out the mapped space position on (x0, 0, z)
+									if (i1 <= ic) //within the cylinder
+									{
+										//get fields at the mapped point into val
+										if (i0 == i1)
+										{
+											w0 = k + nz1*(ic + ny1*(ic-i0));
+											valE.x = efield[w0].x;
+											valE.y = efield[w0].y;
+											valE.z = efield[w0].z;
+											valH.x = hfield[w0].x;
+											valH.y = hfield[w0].y;
+											valH.z = hfield[w0].z;
+										}
+										else
+										{
+											//use weighted average with values at i0 and i1
+											w0 = k + nz1*(ic + ny1*(ic-i0));
+											w1 = k + nz1*(ic + ny1*(ic-i1));
+											valE.x = f0 * efield[w1].x + f1 * efield[w0].x;
+											valE.y = f0 * efield[w1].y + f1 * efield[w0].y;
+											valE.z = f0 * efield[w1].z + f1 * efield[w0].z;
+											valH.x = f0 * hfield[w1].x + f1 * hfield[w0].x;
+											valH.y = f0 * hfield[w1].y + f1 * hfield[w0].y;
+											valH.z = f0 * hfield[w1].z + f1 * hfield[w0].z;
+										}
+										//map the field at (x0, 0, z) to (x, y, z)
+										double x1 = 0, y1 = 0;
+										RotateSymmetryField::map(valE.x, valE.y, x, y, &x1, &y1);
+										err = relativeError(efield[ws].x, x1);
+										if (err > 1)
+										{
+											err = err;
+										}
+										if (err > maxErrE)
+										{
+											maxErrE = err;
+										}
+										avgErrE += err;
+										err = relativeError(efield[ws].y, y1);
+										if (err > 0)
+										{
+											err = err;
+										}
+										if (err > maxErrE)
+										{
+											maxErrE = err;
+										}
+										avgErrE += err;
+										err = relativeError(efield[ws].z, valE.z);
+										if (err > 0)
+										{
+											err = err;
+										}
+										if (err > maxErrE)
+										{
+											maxErrE = err;
+										}
+										avgErrE += err;
+										//
+										RotateSymmetryField::map(valH.x, valH.y, x, y, &x1, &y1);
+										err = relativeError(hfield[ws].x, x1);
+										if (err > maxErrH)
+										{
+											maxErrH = err;
+										}
+										avgErrH += err;
+										err = relativeError(hfield[ws].y, y1);
+										if (err > maxErrH)
+										{
+											maxErrH = err;
+										}
+										avgErrH += err;
+										err = relativeError(hfield[ws].z, valH.z);
+										if (err > maxErrH)
+										{
+											maxErrH = err;
+										}
+										avgErrH += err;
+									}  //within cylinder
+									//
+									ws++;
+									z += simObj->pams.ds;
+								} //z-loop
+								y += simObj->pams.ds;
+							} //j-loop
+							x += simObj->pams.ds;
+						} //i-loop
+						//
+						avgErrE = avgErrE / (double)ws;
+						avgErrH = avgErrH / (double)ws;
+						printf("\r\n%u: z-symmetry maxE:%g, avgE:%g, maxH:%g, avgH:%g", fileIndex, maxErrE, avgErrE, maxErrH, avgErrH);
+						//
+											}
+					else
+					{
+						if (ret == ERR_MEM_OPEN_FILE)
+						{
+							ret = ERR_OK;
+						}
+						break;
+					}
+					fileIndex++;
+				}
+				puts("\r\nVerify RotateSymmetryField\r\n");
+				fileIndex = 0;
+				while (ret == ERR_OK && fileIndex>0)
+				{
+					ret = tssSim->LoadFieldsFromFiles(fileIndex);
+					if (ret == ERR_OK)
+					{
+						size_t w, ws;
+						Point3Dstruct val;
+						double err;
+						double maxErrE = 0, maxErrH = 0;
+						double avgErrE = 0, avgErrH = 0;
+						Point3Dstruct *efield = tssSim->GetFieldE();
+						Point3Dstruct *hfield = tssSim->GetFieldH();
+						//
+						maxErrE = 0, maxErrH = 0;
+						avgErrE = 0, avgErrH = 0;
+						//
+						for (i = 0; i <= ic; i++)
+						{
+							for (k = 0; k <= simObj->pams.nz; k++)
+							{
+								size_t w3d = k + nz1 * (ic + ny1 * i);
+								ezr.setField(i, ic, k, &(efield[w3d]));
+								hzr.setField(i, ic, k, &(hfield[w3d]));
+							}
+						}
+						//
+						ws = 0;
+						for (i = s0; i <= simObj->pams.nx - s1; i++)
+						{
+							for (j = s0; j <= simObj->pams.ny - s1; j++)
+							{
+								for (k = s0; k <= simObj->pams.nz - s1; k++)
+								{
+									w = k + nz1 * (j + ny1 * i);
+									ezr.getField(i, j, k, &val);
+									err = abs(val.x - efield[w].x);
+									if (err > maxErrE)
+									{
+										maxErrE = err;
+									}
+									avgErrE += err;
+									err = abs(val.y - efield[w].y);
+									if (err > maxErrE)
+									{
+										maxErrE = err;
+									}
+									avgErrE += err;
+									err = abs(val.z - efield[w].z);
+									if (err > maxErrE)
+									{
+										maxErrE = err;
+									}
+									avgErrE += err;
+									//
+									hzr.getField(i, j, k, &val);
+									err = abs(val.x - hfield[w].x);
+									if (err > maxErrH)
+									{
+										maxErrH = err;
+									}
+									avgErrH += err;
+									err = abs(val.y - hfield[w].y);
+									if (err > maxErrH)
+									{
+										maxErrH = err;
+									}
+									avgErrH += err;
+									err = abs(val.z - hfield[w].z);
+									if (err > maxErrH)
+									{
+										maxErrH = err;
+									}
+									avgErrH += err;
+									//
+									ws++;
+								}
+							}
+						}
+						//
+						avgErrE = avgErrE / (double)ws;
+						avgErrH = avgErrH / (double)ws;
+						printf("\r\n%u: estimate maxE:%g, avgE:%g, maxH:%g, avgH:%g", fileIndex, maxErrE, avgErrE, maxErrH, avgErrH);
+					}
+					else
+					{
+						if (ret == ERR_MEM_OPEN_FILE)
+						{
+							ret = ERR_OK;
+						}
+						break;
+					}
+					fileIndex++;
+				}
+			}
 		}
 	}
 	return ret;

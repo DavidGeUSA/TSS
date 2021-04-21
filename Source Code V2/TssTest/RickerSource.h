@@ -16,10 +16,11 @@ private:
 	double ppw;
 	double courant;
 	unsigned int i0, j0, k0;
+	unsigned int iN, iP, jN, jP, kN, kP;
 	size_t w0;
 public:
 	RickerSource();
-	~RickerSource();
+	virtual ~RickerSource();
 	virtual int initialize(TaskFile *configs);
 	virtual int initialize(SimStruct *params);
 	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k);

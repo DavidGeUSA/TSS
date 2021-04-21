@@ -136,6 +136,7 @@
     <ClInclude Include="BoundaryTssVoid.h" />
     <ClInclude Include="CurlXYZ.h" />
     <ClInclude Include="CurlXYZ2.h" />
+    <ClInclude Include="DipoleSourceTss.h" />
     <ClInclude Include="FieldsNull.h" />
     <ClInclude Include="GaussianCurlYee.h" />
     <ClInclude Include="HeidlerCurrent.h" />
@@ -152,6 +153,7 @@
     <ClCompile Include="BoundaryTssVoid.cpp" />
     <ClCompile Include="CurlXYZ.cpp" />
     <ClCompile Include="CurlXYZ2.cpp" />
+    <ClCompile Include="DipoleSourceTss.cpp" />
     <ClCompile Include="FieldsNull.cpp" />
     <ClCompile Include="GaussianCurlYee.cpp" />
     <ClCompile Include="HeidlerCurrent.cpp" />

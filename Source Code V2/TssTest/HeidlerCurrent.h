@@ -21,6 +21,7 @@ private:
 	double ita;
 	//center i, j
 	unsigned int i0, j0;
+	unsigned int iN, iP, jN, jP;
 	//computed values
 	double ez;
 	double i1ita;
@@ -39,7 +40,7 @@ protected:
 	
 public:
 	HeidlerCurrent();
-	~HeidlerCurrent();
+	virtual ~HeidlerCurrent();
 	void setTime(double zCurrent, double tCurrent){ z = zCurrent; t = tCurrent; }
 	double I();
 	double dI_dt();

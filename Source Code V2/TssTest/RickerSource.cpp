@@ -40,11 +40,17 @@ int RickerSource::initialize(SimStruct *params)
 	j0 = pams->ny / 2;
 	k0 = pams->nz / 2;
 	w0 = k0 + (pams->nz + 1)*(j0 + (pams->ny + 1)*i0);
+	iN = i0 - pams->smax;
+	iP = i0 + pams->smax;
+	jN = j0 - pams->smax;
+	jP = j0 + pams->smax;
+	kN = k0 - pams->smax;
+	kP = k0 + pams->smax;
 	return ret;
 }
 bool RickerSource::isInSource(unsigned int i, unsigned int j, unsigned int k)
 {
-	return (i == i0 && j == j0 && k == k0);
+	return (i >= iN && i <= iP && j >= jN && j <= jP && k >= kN && k <= kP);
 }
 int RickerSource::applySources(double t, size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile)
 {

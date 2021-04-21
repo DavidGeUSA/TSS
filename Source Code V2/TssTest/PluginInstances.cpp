@@ -16,8 +16,8 @@ create plugin instance by class name
 #include "RickerSource.h"
 #include "FieldsNull.h"
 #include "HeidlerCurrent.h"
+#include "DipoleSourceTss.h"
 #include "../Tss/DivergenceStatistic.h"
-//#include "DivergenceStatisticHeilder.h"
 #include "BoundaryTssVoid.h"
 
 #ifdef __linux__ 
@@ -106,6 +106,12 @@ FieldSourceTss* CreateSourceInstance(const char *className)
 		p->setClassName(className);
 		return dynamic_cast<HeidlerCurrent *>(p);
 	}
+	if (strcmp(className, "DipoleSourceTss") == 0)
+	{
+		DipoleSourceTss *p = new DipoleSourceTss();
+		p->setClassName(className);
+		return dynamic_cast<DipoleSourceTss *>(p);
+	}
 	return NULL;
 }
 
@@ -132,10 +138,15 @@ DivergenceStatistic* CreateDivgStatistics(const char *className)
 {
 	if (className == NULL)
 		return NULL;
-	if (strcmp(className, "DivergenceStatistic") == 0)
+	if (strcmp(className, "DivergenceStatistic3D") == 0)
 	{
-		DivergenceStatistic *p = new DivergenceStatistic();
-		return dynamic_cast<DivergenceStatistic *>(p);
+		DivergenceStatistic3D *p = new DivergenceStatistic3D();
+		return dynamic_cast<DivergenceStatistic3D *>(p);
+	}
+	else if (strcmp(className, "DivergenceStatisticZRotateSymmetry") == 0)
+	{
+		DivergenceStatisticZRotateSymmetry *p = new DivergenceStatisticZRotateSymmetry();
+		return dynamic_cast<DivergenceStatisticZRotateSymmetry *>(p);
 	}
 	return NULL;
 }

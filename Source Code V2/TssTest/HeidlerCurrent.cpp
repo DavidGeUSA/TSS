@@ -46,6 +46,10 @@ int HeidlerCurrent::initialize(SimStruct *params)
 		//assume nx and ny are even
 		i0 = params->nx / 2;
 		j0 = params->ny / 2;
+		iN = i0 - pams->smax;
+		iP = i0 + pams->smax;
+		jN = j0 - pams->smax;
+		jP = j0 + pams->smax;
 	}
 	return ret;
 }
@@ -121,7 +125,7 @@ double HeidlerCurrent::d2I_dt2()
 }
 bool HeidlerCurrent::isInSource(unsigned int i, unsigned int j, unsigned int k)
 {
-	return (i == i0 && j == j0);
+	return (i >= iN && i <= iP && j >= jN && j <= jP);
 }
 int HeidlerCurrent::applySources(double tValue, size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile)
 {

@@ -29,6 +29,52 @@ typedef enum {
 	FIELD_Z = 3,
 }Field_Component;
 
+class EHErrorSum
+{
+private:
+	SimStruct *pams;
+	unsigned int ic;
+	double err;
+	double maxErrE;
+	double maxErrH;
+	double sumErrE;
+	double sumErrH;
+	unsigned int countE;
+	unsigned int countH;
+public:
+	EHErrorSum(SimStruct *p){ 
+		pams = p; ic = pams->nx / 2; maxErrE = maxErrH = sumErrE = sumErrH = err = 0; countE = countH = 0; 
+	}
+	~EHErrorSum(){};
+	void addError(double v1, double v2, FIELD_EMTYPE eh){
+		err = abs(v1 - v2); 
+		if (eh == Field_E)
+		{
+			if (err > maxErrE) maxErrE = err;
+			sumErrE += err;
+			countE++;
+		}
+		else
+		{
+			if (err > maxErrH) maxErrH = err;
+			sumErrH += err;
+			countH++;
+		}
+	}
+	double currentError(){ return err; }
+	double MaxErrorE(){ return maxErrE; }
+	double MaxErrorH(){ return maxErrH; }
+	double AverageErrorE(){ if (countE == 0) return 0; return sumErrE / (double)countE; }
+	double AverageErrorH(){ if (countH == 0) return 0; return sumErrH / (double)countH; }
+	/*
+		map = 0 : negative y-axis
+			  1 : positive y-axis
+			  2 : positive x-axis
+	*/
+	void addErrorMapToAxis(Point3Dstruct *efield, Point3Dstruct *hfield, size_t w0, size_t w1, int map);
+	void addErrorMapToArea(Point3Dstruct *eXaxis, Point3Dstruct *hXaxis, Point3Dstruct *eVal, Point3Dstruct *hVal, double x, double y);
+};
+
 Simulator *createSimulator(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, int *ret);
 int prepareSimulation(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport);
 int tssSimulation(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport);
@@ -47,3 +93,5 @@ int makePointTimeFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder
 int createFieldComponentLines(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int makeStatisticsFile(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
 int combineCsvFiles(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter);
+
+int verifyZrotateSymmetry(MemoryManager *mem, TaskFile *taskConfig, char *dataFolder, fnProgressReport reporter, fnOperationCanceld cancelReport);
