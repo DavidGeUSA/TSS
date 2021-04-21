@@ -1864,10 +1864,10 @@ void PmlTss::apply1stCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < EDGCOUNT; h++)
@@ -1930,29 +1930,29 @@ void PmlTss::apply1stCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 				{
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//wF = IdxField(i, j, k);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
-					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
-					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					sumE[wS].x += coeff[0][w].u.x * ef.x + coeff[0][w].f.x * hc.x;
+					sumE[wS].y += coeff[0][w].u.y * ef.y + coeff[0][w].f.y * hc.y;
+					sumE[wS].z += coeff[0][w].u.z * ef.z + coeff[0][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
-					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
-					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					sumH[wS].x += coeff[0][w].u.x * hf.x + coeff[0][w].g.x * ec.x;
+					sumH[wS].y += coeff[0][w].u.y * hf.y + coeff[0][w].g.y * ec.y;
+					sumH[wS].z += coeff[0][w].u.z * hf.z + coeff[0][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
-					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
-					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					v0.x = coeff[0][w].w.x * ef.x + coeff[0][w].e.x * hc.x;
+					v0.y = coeff[0][w].w.y * ef.y + coeff[0][w].e.y * hc.y;
+					v0.z = coeff[0][w].w.z * ef.z + coeff[0][w].e.z * hc.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
-					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
-					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					v0.x = coeff[0][w].w.x * hf.x + coeff[0][w].h.x * ec.x;
+					v0.y = coeff[0][w].w.y * hf.y + coeff[0][w].h.y * ec.y;
+					v0.z = coeff[0][w].w.z * hf.z + coeff[0][w].h.z * ec.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2007,10 +2007,10 @@ void PmlTss::apply2ndCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < EDGCOUNT; h++)
@@ -2074,28 +2074,28 @@ void PmlTss::apply2ndCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].u.x * ec->x;
-					sumE[wS].y += coeff[1][w].u.y * ec->y;
-					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					sumE[wS].x += coeff[1][w].u.x * ec.x;
+					sumE[wS].y += coeff[1][w].u.y * ec.y;
+					sumE[wS].z += coeff[1][w].u.z * ec.z;
 					//
-					sumH[wS].x += coeff[1][w].u.x * hc->x;
-					sumH[wS].y += coeff[1][w].u.y * hc->y;
-					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					sumH[wS].x += coeff[1][w].u.x * hc.x;
+					sumH[wS].y += coeff[1][w].u.y * hc.y;
+					sumH[wS].z += coeff[1][w].u.z * hc.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].w.x * ec->x;
-					v0.y = ef->y + coeff[1][w].w.y * ec->y;
-					v0.z = ef->y + coeff[1][w].w.z * ec->z;
+					v0.x = ef.x + coeff[1][w].w.x * ec.x;
+					v0.y = ef.y + coeff[1][w].w.y * ec.y;
+					v0.z = ef.y + coeff[1][w].w.z * ec.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].w.x * hc->x;
-					v0.y = hf->y + coeff[1][w].w.y * hc->y;
-					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					v0.x = hf.x + coeff[1][w].w.x * hc.x;
+					v0.y = hf.y + coeff[1][w].w.y * hc.y;
+					v0.z = hf.z + coeff[1][w].w.z * hc.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2150,10 +2150,10 @@ void PmlTss::apply3rdCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < EDGCOUNT; h++)
@@ -2217,28 +2217,28 @@ void PmlTss::apply3rdCurlEdgesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].f.x * hc->x;
-					sumE[wS].y += coeff[1][w].f.y * hc->y;
-					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					sumE[wS].x += coeff[1][w].f.x * hc.x;
+					sumE[wS].y += coeff[1][w].f.y * hc.y;
+					sumE[wS].z += coeff[1][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[1][w].g.x * ec->x;
-					sumH[wS].y += coeff[1][w].g.y * ec->y;
-					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					sumH[wS].x += coeff[1][w].g.x * ec.x;
+					sumH[wS].y += coeff[1][w].g.y * ec.y;
+					sumH[wS].z += coeff[1][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
-					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
-					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					v0.x = ef.x + coeff[1][w].e.x * hc.x + sumE[wS].x;
+					v0.y = ef.y + coeff[1][w].e.y * hc.y + sumE[wS].y;
+					v0.z = ef.z + coeff[1][w].e.z * hc.z + sumE[wS].z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
-					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
-					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					v0.x = hf.x + coeff[1][w].h.x * ec.x + sumH[wS].x;
+					v0.y = hf.y + coeff[1][w].h.y * ec.y + sumH[wS].y;
+					v0.z = hf.z + coeff[1][w].h.z * ec.z + sumH[wS].z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2296,10 +2296,10 @@ void PmlTss::apply1stCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < SIDECOUNT; h++)
@@ -2328,28 +2328,28 @@ void PmlTss::apply1stCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 				for (unsigned int k = k0; k <= k1; k++)
 				{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
-					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
-					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					sumE[wS].x += coeff[0][w].u.x * ef.x + coeff[0][w].f.x * hc.x;
+					sumE[wS].y += coeff[0][w].u.y * ef.y + coeff[0][w].f.y * hc.y;
+					sumE[wS].z += coeff[0][w].u.z * ef.z + coeff[0][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
-					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
-					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					sumH[wS].x += coeff[0][w].u.x * hf.x + coeff[0][w].g.x * ec.x;
+					sumH[wS].y += coeff[0][w].u.y * hf.y + coeff[0][w].g.y * ec.y;
+					sumH[wS].z += coeff[0][w].u.z * hf.z + coeff[0][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
-					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
-					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					v0.x = coeff[0][w].w.x * ef.x + coeff[0][w].e.x * hc.x;
+					v0.y = coeff[0][w].w.y * ef.y + coeff[0][w].e.y * hc.y;
+					v0.z = coeff[0][w].w.z * ef.z + coeff[0][w].e.z * hc.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
-					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
-					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					v0.x = coeff[0][w].w.x * hf.x + coeff[0][w].h.x * ec.x;
+					v0.y = coeff[0][w].w.y * hf.y + coeff[0][w].h.y * ec.y;
+					v0.z = coeff[0][w].w.z * hf.z + coeff[0][w].h.z * ec.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2402,28 +2402,28 @@ void PmlTss::apply1stCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[0][w].u.x * ef->x + coeff[0][w].f.x * hc->x;
-					sumE[wS].y += coeff[0][w].u.y * ef->y + coeff[0][w].f.y * hc->y;
-					sumE[wS].z += coeff[0][w].u.z * ef->z + coeff[0][w].f.z * hc->z;
+					sumE[wS].x += coeff[0][w].u.x * ef.x + coeff[0][w].f.x * hc.x;
+					sumE[wS].y += coeff[0][w].u.y * ef.y + coeff[0][w].f.y * hc.y;
+					sumE[wS].z += coeff[0][w].u.z * ef.z + coeff[0][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[0][w].u.x * hf->x + coeff[0][w].g.x * ec->x;
-					sumH[wS].y += coeff[0][w].u.y * hf->y + coeff[0][w].g.y * ec->y;
-					sumH[wS].z += coeff[0][w].u.z * hf->z + coeff[0][w].g.z * ec->z;
+					sumH[wS].x += coeff[0][w].u.x * hf.x + coeff[0][w].g.x * ec.x;
+					sumH[wS].y += coeff[0][w].u.y * hf.y + coeff[0][w].g.y * ec.y;
+					sumH[wS].z += coeff[0][w].u.z * hf.z + coeff[0][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = coeff[0][w].w.x * ef->x + coeff[0][w].e.x * hc->x;
-					v0.y = coeff[0][w].w.y * ef->y + coeff[0][w].e.y * hc->y;
-					v0.z = coeff[0][w].w.z * ef->z + coeff[0][w].e.z * hc->z;
+					v0.x = coeff[0][w].w.x * ef.x + coeff[0][w].e.x * hc.x;
+					v0.y = coeff[0][w].w.y * ef.y + coeff[0][w].e.y * hc.y;
+					v0.z = coeff[0][w].w.z * ef.z + coeff[0][w].e.z * hc.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = coeff[0][w].w.x * hf->x + coeff[0][w].h.x * ec->x;
-					v0.y = coeff[0][w].w.y * hf->y + coeff[0][w].h.y * ec->y;
-					v0.z = coeff[0][w].w.z * hf->z + coeff[0][w].h.z * ec->z;
+					v0.x = coeff[0][w].w.x * hf.x + coeff[0][w].h.x * ec.x;
+					v0.y = coeff[0][w].w.y * hf.y + coeff[0][w].h.y * ec.y;
+					v0.z = coeff[0][w].w.z * hf.z + coeff[0][w].h.z * ec.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2443,10 +2443,10 @@ void PmlTss::apply2ndCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < SIDECOUNT; h++)
@@ -2475,28 +2475,28 @@ void PmlTss::apply2ndCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 				for (unsigned int k = k0; k <= k1; k++)
 				{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].u.x * ec->x;
-					sumE[wS].y += coeff[1][w].u.y * ec->y;
-					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					sumE[wS].x += coeff[1][w].u.x * ec.x;
+					sumE[wS].y += coeff[1][w].u.y * ec.y;
+					sumE[wS].z += coeff[1][w].u.z * ec.z;
 					//
-					sumH[wS].x += coeff[1][w].u.x * hc->x;
-					sumH[wS].y += coeff[1][w].u.y * hc->y;
-					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					sumH[wS].x += coeff[1][w].u.x * hc.x;
+					sumH[wS].y += coeff[1][w].u.y * hc.y;
+					sumH[wS].z += coeff[1][w].u.z * hc.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].w.x * ec->x;
-					v0.y = ef->y + coeff[1][w].w.y * ec->y;
-					v0.z = ef->z + coeff[1][w].w.z * ec->z;
+					v0.x = ef.x + coeff[1][w].w.x * ec.x;
+					v0.y = ef.y + coeff[1][w].w.y * ec.y;
+					v0.z = ef.z + coeff[1][w].w.z * ec.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].w.x * hc->x;
-					v0.y = hf->y + coeff[1][w].w.y * hc->y;
-					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					v0.x = hf.x + coeff[1][w].w.x * hc.x;
+					v0.y = hf.y + coeff[1][w].w.y * hc.y;
+					v0.z = hf.z + coeff[1][w].w.z * hc.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2549,28 +2549,28 @@ void PmlTss::apply2ndCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].u.x * ec->x;
-					sumE[wS].y += coeff[1][w].u.y * ec->y;
-					sumE[wS].z += coeff[1][w].u.z * ec->z;
+					sumE[wS].x += coeff[1][w].u.x * ec.x;
+					sumE[wS].y += coeff[1][w].u.y * ec.y;
+					sumE[wS].z += coeff[1][w].u.z * ec.z;
 					//
-					sumH[wS].x += coeff[1][w].u.x * hc->x;
-					sumH[wS].y += coeff[1][w].u.y * hc->y;
-					sumH[wS].z += coeff[1][w].u.z * hc->z;
+					sumH[wS].x += coeff[1][w].u.x * hc.x;
+					sumH[wS].y += coeff[1][w].u.y * hc.y;
+					sumH[wS].z += coeff[1][w].u.z * hc.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].w.x * ec->x;
-					v0.y = ef->y + coeff[1][w].w.y * ec->y;
-					v0.z = ef->z + coeff[1][w].w.z * ec->z;
+					v0.x = ef.x + coeff[1][w].w.x * ec.x;
+					v0.y = ef.y + coeff[1][w].w.y * ec.y;
+					v0.z = ef.z + coeff[1][w].w.z * ec.z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].w.x * hc->x;
-					v0.y = hf->y + coeff[1][w].w.y * hc->y;
-					v0.z = hf->z + coeff[1][w].w.z * hc->z;
+					v0.x = hf.x + coeff[1][w].w.x * hc.x;
+					v0.y = hf.y + coeff[1][w].w.y * hc.y;
+					v0.z = hf.z + coeff[1][w].w.z * hc.z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2590,10 +2590,10 @@ void PmlTss::apply3rdCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 	unsigned int i0, i1, k0, k1;
 	//
 	unsigned int j = ic; //y=0
-	Point3Dstruct *ef;
-	Point3Dstruct *hf;
-	Point3Dstruct *hc;
-	Point3Dstruct *ec;
+	Point3Dstruct ef;
+	Point3Dstruct hf;
+	Point3Dstruct hc;
+	Point3Dstruct ec;
 	Point3Dstruct v0;
 	//
 	for (int h = 0; h < SIDECOUNT; h++)
@@ -2621,28 +2621,28 @@ void PmlTss::apply3rdCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 				for (unsigned int k = k0; k <= k1; k++)
 				{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].f.x * hc->x;
-					sumE[wS].y += coeff[1][w].f.y * hc->y;
-					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					sumE[wS].x += coeff[1][w].f.x * hc.x;
+					sumE[wS].y += coeff[1][w].f.y * hc.y;
+					sumE[wS].z += coeff[1][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[1][w].g.x * ec->x;
-					sumH[wS].y += coeff[1][w].g.y * ec->y;
-					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					sumH[wS].x += coeff[1][w].g.x * ec.x;
+					sumH[wS].y += coeff[1][w].g.y * ec.y;
+					sumH[wS].z += coeff[1][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
-					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
-					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					v0.x = ef.x + coeff[1][w].e.x * hc.x + sumE[wS].x;
+					v0.y = ef.y + coeff[1][w].e.y * hc.y + sumE[wS].y;
+					v0.z = ef.z + coeff[1][w].e.z * hc.z + sumE[wS].z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
-					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
-					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					v0.x = hf.x + coeff[1][w].h.x * ec.x + sumH[wS].x;
+					v0.y = hf.y + coeff[1][w].h.y * ec.y + sumH[wS].y;
+					v0.z = hf.z + coeff[1][w].h.z * ec.z + sumH[wS].z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;
@@ -2695,28 +2695,28 @@ void PmlTss::apply3rdCurlSidesZrotateSymmetry(RotateSymmetryField *efield, Rotat
 					//for (unsigned int j = j0; j <= j1; j++)
 					//{
 					//wF = IdxField(i, j, k);
-					ef = efield->getField(i, j, k);
-					hf = hfield->getField(i, j, k);
-					hc = hCurl->getField(i, j, k);
-					ec = eCurl->getField(i, j, k);
+					efield->getField(i, j, k, &ef);
+					hfield->getField(i, j, k, &hf);
+					hCurl->getField(i, j, k, &hc);
+					eCurl->getField(i, j, k, &ec);
 					//integrations updated first before fields are changed
-					sumE[wS].x += coeff[1][w].f.x * hc->x;
-					sumE[wS].y += coeff[1][w].f.y * hc->y;
-					sumE[wS].z += coeff[1][w].f.z * hc->z;
+					sumE[wS].x += coeff[1][w].f.x * hc.x;
+					sumE[wS].y += coeff[1][w].f.y * hc.y;
+					sumE[wS].z += coeff[1][w].f.z * hc.z;
 					//
-					sumH[wS].x += coeff[1][w].g.x * ec->x;
-					sumH[wS].y += coeff[1][w].g.y * ec->y;
-					sumH[wS].z += coeff[1][w].g.z * ec->z;
+					sumH[wS].x += coeff[1][w].g.x * ec.x;
+					sumH[wS].y += coeff[1][w].g.y * ec.y;
+					sumH[wS].z += coeff[1][w].g.z * ec.z;
 					//
 					//fields updated next
-					v0.x = ef->x + coeff[1][w].e.x * hc->x + sumE[wS].x;
-					v0.y = ef->y + coeff[1][w].e.y * hc->y + sumE[wS].y;
-					v0.z = ef->z + coeff[1][w].e.z * hc->z + sumE[wS].z;
+					v0.x = ef.x + coeff[1][w].e.x * hc.x + sumE[wS].x;
+					v0.y = ef.y + coeff[1][w].e.y * hc.y + sumE[wS].y;
+					v0.z = ef.z + coeff[1][w].e.z * hc.z + sumE[wS].z;
 					efield->setField(i, j, k, &v0);
 					//
-					v0.x = hf->x + coeff[1][w].h.x * ec->x + sumH[wS].x;
-					v0.y = hf->y + coeff[1][w].h.y * ec->y + sumH[wS].y;
-					v0.z = hf->z + coeff[1][w].h.z * ec->z + sumH[wS].z;
+					v0.x = hf.x + coeff[1][w].h.x * ec.x + sumH[wS].x;
+					v0.y = hf.y + coeff[1][w].h.y * ec.y + sumH[wS].y;
+					v0.z = hf.z + coeff[1][w].h.z * ec.z + sumH[wS].z;
 					hfield->setField(i, j, k, &v0);
 					//
 					wS++;

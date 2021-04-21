@@ -28,12 +28,14 @@ class Curl; //curl calculator
 typedef struct FieldStatisticStruct
 {
 	unsigned int timeIndex;
-	double maxDivergenceE;
-	double averageDivergenceE;
+	double maxDivergenceE;     //maximum divergence
+	double magForMaxDivgE;     //field magnitude for the maximum divergence
+	double averageDivergenceE; //average divergence
 	double maxDivergenceH;
+	double magForMaxDivgH;
 	double averageDivergenceH;
-	double energySum;
-	double magSumE;
+	double energySum;          //summary of the field energy ay each node
+	double magSumE;            //summary of the field magnitude ay each node
 	double magSumH;
 }FieldStatisticStruct;
 

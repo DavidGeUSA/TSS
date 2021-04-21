@@ -636,6 +636,7 @@ double CurlOne::Divergence(Point3Dstruct *f, unsigned int i0, unsigned int j0, u
 	}
 	else
 		d += dzVz();
+	d = d / 12;
 	return d;
 }
 

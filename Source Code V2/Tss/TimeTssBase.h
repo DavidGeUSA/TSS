@@ -12,6 +12,7 @@ base class for time advancement estimation module
 #include "Space.h"
 #include "PmlTss.h"
 #include "RotateSymmetryField.h"
+#include "DivergenceStatistic.h"
 
 #include "../ProcessMonitor/workProcess.h"
 
@@ -49,6 +50,7 @@ protected:
 	double *GehP, *GhhP, *GeeP, *GheP;
 	//
 	virtual void cleanup();
+	virtual void onSettingSimParams();
 public:
 	TimeTssBase();
 	virtual ~TimeTssBase();
@@ -59,7 +61,6 @@ public:
 	void setReporter(fnProgressReport rpt, fnOperationCanceld cancelReport){ reporter = rpt; if (cancelReport) operationCanceled = cancelReport; }
 	int initializeTimeModule(Space *s, SimStruct *pams0, FieldSourceTss *src);
 	virtual int initFields(FieldsSetter* f0);
-	size_t GetFieldMemorySize(){ return fieldMemorySize; }
 	unsigned int GetemMax(){ if (source == NULL) return 0; return source->GetemMax(); }
 	unsigned int GetsrcDim(){ if (source == NULL) return 0; return source->GetsrcDim(); }
 	bool Canceled(){ return operationCanceled(); }
@@ -78,18 +79,21 @@ public:
 	Point3Dstruct *GetFieldH(){ return H; }
 	Point3Dstruct *GetFieldE(){ return E; }
 	//
-	virtual size_t spacePointCount(){ return (pams->nx + 1)*(pams->ny + 1)*(pams->nz + 1); }
+	size_t spacePointCount(){ return cellCount; }
+	size_t GetFieldMemorySize(){ return fieldMemorySize; }
 	virtual Point3Dstruct *getRawMemoryE(){ return E; }
 	virtual Point3Dstruct *getRawMemoryH(){ return H; }
 	virtual RotateSymmetryField *GetFieldZrotateSymmetryH(){ return NULL; }
 	virtual RotateSymmetryField *GetFieldZrotateSymmetryE(){ return NULL; }
+	virtual DivergenceStatistic *CreateDefaultStatisticsMaker(){ DivergenceStatistic3D *g = new DivergenceStatistic3D(); return dynamic_cast<DivergenceStatistic3D*>(g); }
 	//
 	virtual int GetFirstCurls()=0;
 	virtual int GetNextCurls()=0;
 	Point3Dstruct *GetCurrentCurlH(){ return curlH; }
 	Point3Dstruct *GetCurrentCurlE(){ return curlE; }
 	//
-	virtual int saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave);
+	int saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave);
+	int loadFieldFromFile(char *filename, FIELD_EMTYPE fieldToLoad);
 	//
 	//for Yee-style algorithms
 	virtual bool needModifyFieldsForStatistics(){ return false; }

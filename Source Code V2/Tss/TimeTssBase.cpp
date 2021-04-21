@@ -68,12 +68,18 @@ void TimeTssBase::cleanup()
 		FreeMemory(curlE); curlE = NULL;
 	}
 }
+void TimeTssBase::onSettingSimParams()
+{
+	cellCount = (pams->nx + 1)*(pams->ny + 1)*(pams->nz + 1);
+}
 int TimeTssBase::initializeTimeModule(Space *s, SimStruct *pams0, FieldSourceTss *src)
 {
 	using namespace boost::multiprecision;
 	int ret = ERR_OK;
 	puts("\r\nCalculating update coefficients...");
 	pams = pams0;
+	onSettingSimParams();
+	fieldMemorySize = cellCount*sizeof(Point3Dstruct);
 	if (src != NULL)
 	{
 		if (!src->Initialized())
@@ -399,8 +405,6 @@ int TimeTssBase::initFields(FieldsSetter* f0)
 	int ret = ERR_OK;
 	puts("\r\nAllocating field memories...");
 	//
-	cellCount = (pams->nx + 1)*(pams->ny + 1)*(pams->nz + 1);
-	fieldMemorySize = cellCount*sizeof(Point3Dstruct);
 	//all field memories used
 	if (H != NULL) 
 	{
@@ -740,7 +744,6 @@ int TimeTssBase::writeCoefficientsToFile(char *file, unsigned int maxTimeSteps, 
 int TimeTssBase::saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave)
 {
 	int ret = ERR_OK;
-	size_t cc = spacePointCount();
 	FILE *fp = NULL;
 	ret = openfileWrite(filename, &fp);
 	if (ret != ERR_OK || fp == NULL)
@@ -753,18 +756,53 @@ int TimeTssBase::saveFieldToFile(char *filename, FIELD_EMTYPE fieldToSave)
 		size_t sizew; 
 		if (fieldToSave == Field_E)
 		{
-			sizew = fwrite(getRawMemoryE(), sizeof(Point3Dstruct), cc, fp);
+			sizew = fwrite(getRawMemoryE(), sizeof(Point3Dstruct), cellCount, fp);
 		}
 		else
 		{
-			sizew = fwrite(getRawMemoryH(), sizeof(Point3Dstruct), cc, fp);
+			sizew = fwrite(getRawMemoryH(), sizeof(Point3Dstruct), cellCount, fp);
 		}
 		fclose(fp);
-		if (sizew != cc)
+		if (sizew != cellCount)
 		{
 			ret = ERR_FILE_WRITE_LESS;
 		}
 	}
 	return ret;
 }
+
+int TimeTssBase::loadFieldFromFile(char *filename, FIELD_EMTYPE fieldToLoad)
+{
+	int ret = ERR_OK;
+	size_t fSize = 0;
+	Point3Dstruct *f = (Point3Dstruct *)ReadFileIntoMemory(filename, &fSize, &ret);
+	if (ret == ERR_OK)
+	{
+		if (fieldMemorySize != fSize)
+		{
+			ret = ERR_FILESIZE_MISMATCH;
+		}
+		else
+		{
+			Point3Dstruct *field;
+			if (fieldToLoad == Field_E)
+			{
+				field = getRawMemoryE();
+			}
+			else
+			{
+				field = getRawMemoryH();
+			}
+			for (size_t w = 0; w < cellCount; w++)
+			{
+				field[w].x = f[w].x;
+				field[w].y = f[w].y;
+				field[w].z = f[w].z;
+			}
+		}
+		FreeMemory(f);
+	}
+	return ret;
+}
+
 

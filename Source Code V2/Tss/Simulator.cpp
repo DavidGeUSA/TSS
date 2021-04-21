@@ -35,10 +35,11 @@ Simulator::~Simulator()
 	closeCSVoutputFiles();
 }
 
-int Simulator::initializeSimulator(char *timeClassName)
+int Simulator::initializeSimulator(TaskFile *taskConfig)
 {
 	int ret = ERR_OK;
 	size_t startTime = getTimeTick();
+	char *timeClassName = taskConfig->getString(TP_TSS_TIME_CLASS, true);
 	simObj.reporter("Initialing simulator, please wait ...", false);
 	//
 	if (timeAdv == NULL)
@@ -68,6 +69,11 @@ int Simulator::initializeSimulator(char *timeClassName)
 			TimeYee *p = new TimeYee();
 			timeAdv = dynamic_cast<TimeYee *>(p);
 		}
+		else if (strcmp(timeClassName, "TimeTssRotateSymmetryZ") == 0)
+		{
+			TimeTssRotateSymmetryZ *p = new TimeTssRotateSymmetryZ();
+			timeAdv = dynamic_cast<TimeTssRotateSymmetryZ *>(p);
+		}
 		else
 		{
 			return ERR_TIMECLASSNAME;
@@ -75,6 +81,14 @@ int Simulator::initializeSimulator(char *timeClassName)
 	}
 	timeAdv->SetMemoryManager(simObj.mem);
 	ret = timeAdv->initializeTimeModule(&space, &(simObj.pams), simObj.src);
+	if (ret == ERR_OK)
+	{
+		if (simObj.dvgs == NULL)
+		{
+			simObj.dvgs = timeAdv->CreateDefaultStatisticsMaker();
+			ret = simObj.dvgs->initializeByConfig(taskConfig);
+		}
+	}
 	if (ret == ERR_OK)
 	{
 		char spaceMatrixFile[FILENAME_MAX];
@@ -245,6 +259,7 @@ int Simulator::writeSpaceEstimationMatricesToFile()
 	return ret;
 }
 
+/*
 int Simulator::saveFieldToFile(Point3Dstruct *field, char *filename)
 {
 	int ret = ERR_OK;
@@ -285,37 +300,36 @@ int Simulator::saveFieldToFile(Point3Dstruct *field, char *filename)
 #endif
 	return ret;
 }
+*/
+
+/*
 int Simulator::loadFieldFromFile(Point3Dstruct *field, char *filename)
 {
 	int ret = ERR_OK;
 	MemoryManager *_mem = simObj.mem;
-	//wchar_t fnW[FILENAME_MAX];
 	size_t cc = space.GetCellCount();
 	size_t fSize = 0;
-	//ret = copyC2W(fnW, FILENAME_MAX, filename);
+	Point3Dstruct *f = (Point3Dstruct *)ReadFileIntoMemory(filename, &fSize, &ret);
 	if (ret == ERR_OK)
 	{
-		Point3Dstruct *f = (Point3Dstruct *)ReadFileIntoMemory(filename, &fSize, &ret);
-		if (ret == ERR_OK)
+		if (timeAdv->GetFieldMemorySize() != fSize)
 		{
-			if (timeAdv->GetFieldMemorySize() != fSize)
-			{
-				ret = ERR_FILESIZE_MISMATCH;
-			}
-			else
-			{
-				for (size_t w = 0; w < cc; w++)
-				{
-					field[w].x = f[w].x;
-					field[w].y = f[w].y;
-					field[w].z = f[w].z;
-				}
-			}
-			FreeMemory(f);
+			ret = ERR_FILESIZE_MISMATCH;
 		}
+		else
+		{
+			for (size_t w = 0; w < cc; w++)
+			{
+				field[w].x = f[w].x;
+				field[w].y = f[w].y;
+				field[w].z = f[w].z;
+			}
+		}
+		FreeMemory(f);
 	}
 	return ret;
 }
+*/
 
 /*
 	load SimStruct from a file created by saveSimulateParametersToFile
@@ -335,38 +349,61 @@ int Simulator::LoadSimulatePatamersFromFile(char *file, SimStruct *pams)
 
 void Simulator::ResetSimStruct(TssSimStruct *tss)
 {
+	tss->mem = NULL;
 	tss->boundaryCondition = NULL;
-	tss->curlCoefficientsFile = NULL;
 	tss->initFields = NULL;
+	tss->src = NULL;
+	tss->dvgs = NULL;
+	tss->curlCoefficientsFile = NULL;
 	tss->matrixFileFolder = NULL;
 	tss->dataFileFolder = NULL;
 	tss->mainDataFolder = NULL;
-	tss->mem = NULL;
+	tss->saveToFilename = NULL;
+	tss->timeCoefficientsFile = NULL;
+	//
 	tss->pams.ds = 0;
 	tss->pams.dt = 0;
 	tss->pams.eps = 0;
-	tss->pams.kmax = 0;
-	tss->pams.maxTimeSteps = 0;
-	tss->pams.startTimeStep = 0;
 	tss->pams.mu = 0;
 	tss->pams.nx = 0;
 	tss->pams.ny = 0;
 	tss->pams.nz = 0;
 	tss->pams.rho = 0;
-	tss->pams.saveInterval = 0;
 	tss->pams.sie = 0;
 	tss->pams.sim = 0;
+	tss->pams.kmax = 0;
 	tss->pams.smax = 0;
 	tss->pams.xmin = 0;
 	tss->pams.ymin = 0;
 	tss->pams.zmin = 0;
+	tss->pams.courantFactor = 1;
+	tss->pams.spaceFactor = 1;
+	tss->pams.threads = 1;
+	tss->pams.maxTimeSteps = 0;
+	tss->pams.startTimeStep = 0;
+	tss->pams.saveInterval = 0;
+	tss->pams.showInterval = 0;
+	//
 	tss->reporter = NULL;
-	tss->saveToFilename = NULL;
-	tss->src = NULL;
-	tss->timeCoefficientsFile = NULL;
 	tss->generateStatisticFile = true;
 	tss->numOutputFiles = 0;
 	tss->outputFiles = NULL;
+	tss->canceled = NULL;
+	//
+	tss->pams.pml.alphaMax = 0;
+	tss->pams.pml.betaMax = 0;
+	tss->pams.pml.disable = true;
+	tss->pams.pml.Ln = 0;
+	tss->pams.pml.power = 0;
+	tss->pams.pml.Pxh = false;
+	tss->pams.pml.Pxl = false;
+	tss->pams.pml.Pyh = false;
+	tss->pams.pml.Pyl = false;
+	tss->pams.pml.Pzh = false;
+	tss->pams.pml.Pzl = false;
+
+	tss->pams.relativeDivergence = false;
+	tss->pams.relDivergThreshold = 0;
 }
 
 /*
@@ -405,6 +442,7 @@ void Simulator::GetSimulationParameters(TaskFile *taskConfig, SimStruct *pams)
 	pams->maxTimeSteps = taskConfig->getUInt(TP_TSS_MAXTIME, true);
 	pams->startTimeStep = taskConfig->getUInt(TP_TSS_STARTTIME, true);
 	pams->saveInterval = taskConfig->getUInt(TP_TSS_RECINV, true);
+	pams->showInterval = taskConfig->getUInt(TP_TSS_SCRNINV, true);
 	pams->pml.Ln = taskConfig->getUInt(TP_PML_THICK, true);
 	pams->pml.alphaMax = taskConfig->getDouble(TP_PML_ALPHA, true);
 	pams->pml.betaMax = taskConfig->getDouble(TP_PML_BETA, true);
@@ -415,7 +453,15 @@ void Simulator::GetSimulationParameters(TaskFile *taskConfig, SimStruct *pams)
 	pams->pml.Pzl = taskConfig->getBoolean(TP_PML_Z_LOW, true);
 	pams->pml.Pzh = taskConfig->getBoolean(TP_PML_Z_HIGH, true);
 	pams->pml.power = taskConfig->getDouble(TP_PML_POWER, true);
-	pams->pml.disable = taskConfig->getBoolean(TP_PML_DISABLE, true);
+	if (taskConfig->getIndexByName(TP_PML_DISABLE) < 0)
+	{
+		pams->pml.disable = true;
+		taskConfig->resetErrorCode();
+	}
+	else
+		pams->pml.disable = taskConfig->getBoolean(TP_PML_DISABLE, true);
+	pams->relativeDivergence = taskConfig->getBoolean(TP_RELATIVE_DIVERGENCE, true);
+	pams->relDivergThreshold = taskConfig->getDouble(TP_REL_DIVG_THRESHOLD, true);
 }
 
 /*
@@ -794,7 +840,7 @@ int Simulator::saveFieldsToFiles()
 	if (bSaveWholeFields)
 	{
 		char filename[FILENAME_MAX];
-		ret = formDataFilename(filename, "e", "dat", datafileindex);
+		ret = formFieldDataFilename(filename, Field_E, datafileindex);
 		if (ret == ERR_OK)
 		{
 			//ret = saveFieldToFile(timeAdv->GetFieldE(), filename);
@@ -802,7 +848,7 @@ int Simulator::saveFieldsToFiles()
 		}
 		if (ret == ERR_OK)
 		{
-			ret = formDataFilename(filename, "h", "dat", datafileindex);
+			ret = formFieldDataFilename(filename, Field_H, datafileindex);
 			if (ret == ERR_OK)
 			{
 				//ret = saveFieldToFile(timeAdv->GetFieldH(), filename);
@@ -814,10 +860,43 @@ int Simulator::saveFieldsToFiles()
 	return ret;
 }
 
+int Simulator::formFieldDataFilename(char *filename, FIELD_EMTYPE eh, unsigned int fileIndex)
+{
+	if (eh == Field_E)
+	{
+		return formDataFilename(filename, "e", "dat", fileIndex);
+	}
+	else if (eh == Field_H)
+	{
+		return formDataFilename(filename, "h", "dat", fileIndex);
+	}
+	throw;
+}
+/*
+	load fields data from data files
+*/
+int Simulator::LoadFieldsFromFiles(unsigned int fileIndex)
+{
+	char filename[FILENAME_MAX];
+	int ret = formFieldDataFilename(filename, Field_E, fileIndex);
+	if (ret == ERR_OK)
+	{
+		ret = timeAdv->loadFieldFromFile(filename, Field_E);
+	}
+	if (ret == ERR_OK)
+	{
+		ret = formFieldDataFilename(filename, Field_H, fileIndex);
+		if (ret == ERR_OK)
+		{
+			ret = timeAdv->loadFieldFromFile(filename, Field_H);
+		}
+	}
+	return ret;
+}
 /*
 	for startTimeStep > 0, load fields from data files
 */
-int Simulator::LoadStartingFields(Point3Dstruct *efile, Point3Dstruct *hfile)
+int Simulator::LoadStartingFields()//Point3Dstruct *efile, Point3Dstruct *hfile)
 {
 	int ret = ERR_OK;
 	//calculate file index
@@ -827,20 +906,7 @@ int Simulator::LoadStartingFields(Point3Dstruct *efile, Point3Dstruct *hfile)
 		return ERR_START_INTERVAL;
 	}
 	unsigned int fileIndex = simObj.pams.startTimeStep / simObj.pams.saveInterval;
-	char filename[FILENAME_MAX];
-	ret = formDataFilename(filename, "e", "dat", fileIndex);
-	if (ret == ERR_OK)
-	{
-		ret = loadFieldFromFile(timeAdv->GetFieldE(), filename);
-	}
-	if (ret == ERR_OK)
-	{
-		ret = formDataFilename(filename, "h", "dat", fileIndex);
-		if (ret == ERR_OK)
-		{
-			ret = loadFieldFromFile(timeAdv->GetFieldH(), filename);
-		}
-	}
+	ret = LoadFieldsFromFiles(fileIndex);
 	datafileindex = fileIndex + 1; //next file index
 	return ret;
 }
@@ -889,6 +955,7 @@ int Simulator::run()
 	startTime = getTimeTick();
 	//
 	saveFileIndexCount = 0;
+	showStepInfoCount = 0;
 	if (simObj.pams.startTimeStep == 0)
 	{
 		timeAdv->resetTime();
@@ -917,7 +984,7 @@ int Simulator::run()
 	else
 	{
 		//load fields from files
-		ret = LoadStartingFields(timeAdv->GetFieldE(), timeAdv->GetFieldH());
+		ret = LoadStartingFields();// timeAdv->GetFieldE(), timeAdv->GetFieldH());
 		if (ret == ERR_OK)
 		{
 			timeAdv->setStartTime(simObj.pams.startTimeStep);
@@ -947,34 +1014,39 @@ int Simulator::run()
 			}
 			timeAdv->advanceTimeStepValue();
 			endTime = getTimeTick();
+			showStepInfoCount++;
+			if (showStepInfoCount >= simObj.pams.showInterval)
+			{
+				showStepInfoCount = 0;
 #ifdef TIMESTEPPROFILING
-			printf("%d:%d, c1:%d(%d,%d),a1:%d(%d,%d),c2:%d(%d,%d),a2:%d(%d,%d),c3:%d(%d,%d),a3:%d(%d,%d)\r\n", timeAdv->GetTimeIndex(), endTime - startTime
-				,timeAdv->timeUsedCal1
-				, timeAdv->timeUsedCal1E
-				, timeAdv->timeUsedCal1H
-				,timeAdv->timeUsedAppCurl01
-				, timeAdv->timeUsedAppCurl01E
-				, timeAdv->timeUsedAppCurl01H
-				,timeAdv->timeUsedCal2
-				, timeAdv->timeUsedCal2E
-				, timeAdv->timeUsedCal2H
-				,timeAdv->timeUsedAppCurl2
-				, timeAdv->timeUsedAppCurl2E
-				, timeAdv->timeUsedAppCurl2H
-				,timeAdv->timeUsedCal3
-				, timeAdv->timeUsedCal3E
-				, timeAdv->timeUsedCal3H
-				,timeAdv->timeUsedAppCurl3
-				, timeAdv->timeUsedAppCurl3E
-				, timeAdv->timeUsedAppCurl3H
-				);
+				printf("%d:%d, c1:%d(%d,%d),a1:%d(%d,%d),c2:%d(%d,%d),a2:%d(%d,%d),c3:%d(%d,%d),a3:%d(%d,%d)\r\n", timeAdv->GetTimeIndex(), endTime - startTime
+					,timeAdv->timeUsedCal1
+					, timeAdv->timeUsedCal1E
+					, timeAdv->timeUsedCal1H
+					,timeAdv->timeUsedAppCurl01
+					, timeAdv->timeUsedAppCurl01E
+					, timeAdv->timeUsedAppCurl01H
+					,timeAdv->timeUsedCal2
+					, timeAdv->timeUsedCal2E
+					, timeAdv->timeUsedCal2H
+					,timeAdv->timeUsedAppCurl2
+					, timeAdv->timeUsedAppCurl2E
+					, timeAdv->timeUsedAppCurl2H
+					,timeAdv->timeUsedCal3
+					, timeAdv->timeUsedCal3E
+					, timeAdv->timeUsedCal3H
+					,timeAdv->timeUsedAppCurl3
+					, timeAdv->timeUsedAppCurl3E
+					, timeAdv->timeUsedAppCurl3H
+					);
 #else
 #ifdef __linux__ 
-			printf("%u:%Ilu ",timeAdv->GetTimeIndex(), endTime - startTime);
+				printf("%u:%Ilu ",timeAdv->GetTimeIndex(), endTime - startTime);
 #elif _WIN32
-			printf("%Iu:%Iu ", timeAdv->GetTimeIndex(), endTime - startTime);
+				printf("%Iu:%Iu ", timeAdv->GetTimeIndex(), endTime - startTime);
 #endif
 #endif
+			}
 			//apply source first
 			if (simObj.src != NULL)
 			{
@@ -1057,7 +1129,7 @@ int Simulator::generateStatisticFile()
 				size_t esize = 0, hsize = 0;
 				MemoryManager *_mem = simObj.mem;
 				//
-				sprintf_1(msg, MESSAGELINESIZE, "Time\tEnergy\tMax Divg E\tAvg Divg E\tMax Divg H\tAvg Divg H");
+				sprintf_1(msg, MESSAGELINESIZE, "Time\tEnergy\tMax Divg E (||E||)\tAvg Divg E (avg ||E||)\tMax Divg H (||H||)\tAvg Divg H (avg ||H||)");
 				ret = writefile(fhStatistic, msg, (unsigned int)strnlen_0(msg, MESSAGELINESIZE));
 				if (ret == ERR_OK)
 				{
@@ -1090,7 +1162,7 @@ int Simulator::generateStatisticFile()
 								efile = (Point3Dstruct *)ReadFileIntoMemory(filename, &esize, &ret);
 								if (ret == ERR_OK)
 								{
-									if (esize != space.GetFieldMemorySize())
+									if (esize != timeAdv->GetFieldMemorySize())
 									{
 										ret = ERR_INVALID_SIZE;
 									}
@@ -1134,7 +1206,7 @@ int Simulator::generateStatisticFile()
 									hfile = (Point3Dstruct *)ReadFileIntoMemory(filename, &hsize, &ret);
 									if (ret == ERR_OK)
 									{
-										if (hsize != space.GetFieldMemorySize())
+										if (hsize != timeAdv->GetFieldMemorySize())
 										{
 											ret = ERR_INVALID_SIZE;
 										}
@@ -1228,10 +1300,13 @@ int Simulator::calculateStatistics(Point3Dstruct *efile, Point3Dstruct *hfile, i
 	fs.averageDivergenceE = fs.averageDivergenceE / (double)pointCount;
 	fs.averageDivergenceH = fs.averageDivergenceH / (double)pointCount;
 	//
-	sprintf_1(msg, MESSAGELINESIZE, "\n%u\t%g\t%g\t%g\t%g\t%g",
+	//energy in the whole domain
+	fs.energySum = fs.energySum * simObj.pams.ds * simObj.pams.ds * simObj.pams.ds;
+	//
+	sprintf_1(msg, MESSAGELINESIZE, "\n%u\t%g\t%g (%g)\t%g (%g)\t%g (%g)\t%g (%g)",
 		fs.timeIndex, fs.energySum,
-		fs.maxDivergenceE, fs.averageDivergenceE,
-		fs.maxDivergenceH, fs.averageDivergenceH);
+		fs.maxDivergenceE, fs.magForMaxDivgE, fs.averageDivergenceE, fs.magSumE / (double)pointCount,
+		fs.maxDivergenceH, fs.magForMaxDivgH, fs.averageDivergenceH, fs.magSumH / (double)pointCount);
 	ret = writefile(fhStatistic, msg, (unsigned int)strnlen_0(msg, MESSAGELINESIZE));
 	return ret;
 }

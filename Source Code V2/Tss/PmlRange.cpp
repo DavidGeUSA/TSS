@@ -708,17 +708,17 @@ unsigned int PmlSide::jEnd()
 	switch (rangeIndex)
 	{
 	case SIDE_XL:
-		return pams->nx - pams->pml.Ln;
+		return pams->ny - pams->pml.Ln;
 	case SIDE_XH:
-		return pams->nx - pams->pml.Ln;
+		return pams->ny - pams->pml.Ln;
 	case SIDE_YL:
 		return pams->pml.Ln - 1;
 	case SIDE_YH:
 		return pams->ny;
 	case SIDE_ZL:
-		return pams->nz - pams->pml.Ln;
+		return pams->ny - pams->pml.Ln;
 	case SIDE_ZH:
-		return pams->nz - pams->pml.Ln;
+		return pams->ny - pams->pml.Ln;
 	}
 	throw;
 }

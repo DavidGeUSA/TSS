@@ -51,7 +51,7 @@ void LoopWorkDivider::initializeDivider(unsigned int nx0, unsigned int ny0, unsi
 
 void LoopWorkDividerSymmetryZ::initializeDivider(unsigned int nx0, unsigned int ny0, unsigned int nz0, unsigned int n)
 {
-	unsigned int ic = nx / 2;
+	unsigned int ic = nx0 / 2;
 	nx = nx0;
 	ny = ny0;
 	nz = nz0;
@@ -73,6 +73,15 @@ void LoopWorkDividerSymmetryZ::initializeDivider(unsigned int nx0, unsigned int 
 			works[i].EndIndex = (i + 1)*ndx - 1;
 		else
 			works[i].EndIndex = ic;
-		works[i].StartOneDimIndex = (nz + 1) * (i * ndx);
+		works[i].StartOneDimIndex = (nz + 1) * works[i].StartIndex;
 	}
+}
+
+LoopWorkDividerSymmetryZ::LoopWorkDividerSymmetryZ()
+{
+
+}
+LoopWorkDividerSymmetryZ::~LoopWorkDividerSymmetryZ()
+{
+
 }

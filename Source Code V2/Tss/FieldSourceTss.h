@@ -6,7 +6,6 @@ Allrights reserved by David Ge
 
 ********************************************************************/
 #include "Tss.h"
-//#include "TimeTssBase.h"
 #include "RotateSymmetryField.h"
 #include "../EMField/Plugin.h"
 #include "../FileUtil/taskFile.h"
@@ -43,7 +42,7 @@ protected:
 	void setInitialized(){ _initialized = true; }
 public:
 	FieldSourceTss();
-	~FieldSourceTss();
+	virtual ~FieldSourceTss();
 	void cleanup();
 	bool Initialized(){ return _initialized; }
 	//give derived classes a chance to read more configurations
@@ -60,10 +59,27 @@ public:
 	double *GetJeE(){ return u0; }
 	double *GetJmE(){ return w0; }
 	//
+	/*
+		this is for excluding source area, the purpose is for calculating divergences of source-free areas.
+	*/
 	virtual bool isInSource(unsigned int i, unsigned int j, unsigned int k){ return false; }
 	//major function
 	virtual int applySources(double t,size_t tIndex, Point3Dstruct *efile, Point3Dstruct *hfile){ return 0; }
 	virtual int applyToZrotateSymmetry(double t, size_t tIndex, RotateSymmetryField *efile, RotateSymmetryField *hfile){ return 0; }
 	int applySourceToFields(TimeTssBase *timeModule);
+};
+
+/*
+	time function as the current density
+*/
+class WaveForm
+{
+public:
+	WaveForm(){}
+	virtual ~WaveForm(){}
+
+	virtual double value(double t) = 0;
+	virtual double dv_dt(double t) = 0;
+	virtual double dv2_dt2(double t) = 0;
 };
 

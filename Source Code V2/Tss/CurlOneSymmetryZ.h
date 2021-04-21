@@ -20,19 +20,19 @@ private:
 	unsigned int nxN1, nyN1, nzN1; //nx-1, ny-1, nz-1
 	unsigned int nx1, ny1, nz1;    //nx+1, ny+1, nz+1
 	//
+	unsigned int ic; //nx/2
+	//
 	//work variables
 	unsigned int i, j, k;
-	//size_t w;
+	Point3Dstruct v0;
 	//prepare for threading
 	unsigned int th;
 	unsigned int i0, i1;
-	//size_t w0;
-	Point3Dstruct v0;
 public:
 	CurlOneSymmetryZ();
 	~CurlOneSymmetryZ();
 	void setSpaceRange(unsigned int nx0, unsigned int ny0, unsigned int nz0);
-	size_t I(unsigned int i, unsigned int j, unsigned int k){ return (k) + nz1*((j) + ny1*(i)); }
+	//size_t I(unsigned int i, unsigned int j, unsigned int k){ return (k) + nz1*((j) + ny1*(i)); }
 	void setThreadWork(unsigned int startIndex, unsigned int endIndex, size_t startIndexOneD, unsigned int t)
 	{
 		i0 = startIndex; i1 = endIndex; /* w0 = startIndexOneD;*/ th = t;

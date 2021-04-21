@@ -13,8 +13,10 @@ Time-Space-Synchronized FDTD simulation
 #include "TimeTss2Threads.h"
 #include "TimeTssMultiThreads.h"
 #include "TimeYee.h"
+#include "TimeTssRotateSymmetryZ.h"
 #include "BoundaryTss.h"
 #include "DivergenceStatistic.h"
+#include "../FileUtil/taskFile.h"
 
 //screen message buffer size
 #define MESSAGELINESIZE 256
@@ -50,12 +52,13 @@ private:
 	TimeTssBase *timeAdv;            //time advance estimation
 	TssSimStruct simObj;             //simulation configuration
 	unsigned int saveFileIndexCount; //time to save fields to file: saveFileIndexCount > saveToFileInterval 
+	unsigned int showStepInfoCount;  //time to show step info on the screen: showStepInfoCount > showInterval 
 	unsigned int datafileindex;      //appended to data file names; 0,1,2,...
 	FILE **csvFiles;                 //output files specified by simObj.outputFiles
 	//
 	int saveFieldsToFiles();         //save E and H to two files
-	int saveFieldToFile(Point3Dstruct *field, char *filename); //save a field to a file
-	int loadFieldFromFile(Point3Dstruct *field, char *filename); //load a field from a file
+	//int saveFieldToFile(Point3Dstruct *field, char *filename); //save a field to a file
+	//int loadFieldFromFile(Point3Dstruct *field, char *filename); //load a field from a file
 	int saveSimulateParametersToFile();         //save confiurations to a text file
 	int formStatisticsFilename(char *filename); //form a file name for creating a field statistics file
 	int formCSVoutputFilename(char *filename, FieldOutputStruct *outputFormat, unsigned int startTimeStep, unsigned int endTimeStep); //form a file name for creating a CSV output file
@@ -80,6 +83,7 @@ public:
 	static void GetSimStruct(TaskFile *taskConfig, TssSimStruct *tss);
 	static int FormSpaceMatrixFilename(char *spaceMatrixFile, const char *dataFolder, unsigned int smax, char *matrixFileFolder);
 	//instance utilities
+	int formFieldDataFilename(char *filename, FIELD_EMTYPE eh, unsigned int fileIndex);
 	int formDataFilename(char *filename, const char *eh, const char *ext, unsigned int fileIndex);
 	int calculateStatistics(Point3Dstruct *efile, Point3Dstruct *hfile, int fileIndex, FILE *saveFieldToFilefhStatistic);
 	int CreateMatrixFile(unsigned int smax0, char *file){ return space.CreateMatrixFile(smax0, file); }
@@ -89,13 +93,14 @@ public:
 	size_t GetCellCount(){ return space.GetCellCount(); }
 	double GetSpaceStep(){ return simObj.pams.ds; }
 	TssSimStruct *GetSimParameters(){ return &simObj; }
-	int LoadStartingFields(Point3Dstruct *efile, Point3Dstruct *hfile);
+	int LoadFieldsFromFiles(unsigned int fileIndex);
+	int LoadStartingFields();
 	//for unit tests ===============================================================
 	void ResetFields(){ space.SetFields(timeAdv->GetFieldH(), timeAdv->GetFieldE()); }
 	int GetFirstCurls(){ return timeAdv->GetFirstCurls(); }
 	int GetNextCurls(){ return timeAdv->GetNextCurls(); }
-	Point3Dstruct *GetFieldE(){ return timeAdv->GetFieldE(); }
-	Point3Dstruct *GetFieldH(){ return timeAdv->GetFieldH(); }
+	Point3Dstruct *GetFieldE(){ return timeAdv->getRawMemoryE(); }
+	Point3Dstruct *GetFieldH(){ return timeAdv->getRawMemoryH(); }
 	Point3Dstruct *GetCurrentCurlE(){ return timeAdv->GetCurrentCurlE(); }
 	Point3Dstruct *GetCurrentCurlH(){ return timeAdv->GetCurrentCurlH(); }
 	Curl *GetCurlE(){ return space.GetCurlE(); }
@@ -124,7 +129,7 @@ public:
 	int combineCsvFiles(unsigned *endTimeSteps, size_t count);
 	//==============================================================================
 	//major functionality
-	virtual int initializeSimulator(char *timeClassName);
+	virtual int initializeSimulator(TaskFile *taskConfig);
 	virtual int run();
 	virtual int generateStatisticFile();
 };

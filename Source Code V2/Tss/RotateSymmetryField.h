@@ -23,33 +23,36 @@ class RotateSymmetryField :
 private:
 	unsigned int ic;      //center point = nx/2
 	unsigned int ic1;     //ic+1
-	Point3Dstruct *plane; //(i,ic,k) plane, i=0,1,...,ic; j=ic; k=0,1,...,nz
+	unsigned int nz1;     //nz+1
+	size_t cellCount;     //ic1*nz1
+	size_t fieldMemorySize; //cellCount*sizeof(Point3Dstruct)
+	Point3Dstruct *plane;   //(i,ic,k) plane, i=0,1,...,ic; j=ic; k=0,1,...,nz
+	bool memAllocated;      //allocated plane, need to free plane
 	//
-	Point3Dstruct val;
+	//Point3Dstruct val;
 	//
-	//work variables
-	int ir, jr;          //for calculate radius, ir = ic-i, jr = ic-j
-	double r;            //radius = sqrt(ir^2+jr^2)
-	unsigned int n0, n1; //integers covering r; n1=ceiling(r)>=r; n0=floor(r)<=r
-	unsigned int dn;     //dn = n1-n0; if dn==0 then index=(ic-n0,ic,k) 
-						 //if dn !=0 then use weighted average between indexes (ic-n0,ic,k) and (ic-n1,ic,k) 
-	double f1, f0;       //weights, f1=(n1-r)/dn, f0=(r-n0)/dn
-						 //Field(i,j,k) = f1 * Field(ic-n0,ic,k) + f0 * Field(ic-n1,ic,k)
-	size_t idx1, idx0;
 public:
 	RotateSymmetryField();
+	RotateSymmetryField(SimStruct *simp, Point3Dstruct *field);
 	~RotateSymmetryField();
 	void cleanup();
 	Point3Dstruct *getRawMemory(){ return plane; }
+	void setRawMemory(Point3Dstruct *f){ plane = f; }
+	//static utilities
+	static int IsZrotateSymmetry(SimStruct *pams);
+	static void map(double fx0, double fy0, double x, double y, double *pfx, double *pfy);
+	static void mapToNegativeY(double fx0, double fy0, double *pfx, double *pfy);
+	static void mapToPositiveY(double fx0, double fy0, double *pfx, double *pfy);
+	static void mapToPositiveX(double fx0, double fy0, double *pfx, double *pfy);
 	//
 	//plane index
-	size_t Idx(unsigned int i, unsigned int k){ return k + ic1*i; }
+	size_t Idx(unsigned int i, unsigned int k){ return k + nz1*i; }
 	Point3Dstruct *getFieldOnPlane(size_t w){ return &(plane[w]); }
 	Point3Dstruct *getFieldOnPlane(unsigned int i, unsigned int k){ return &(plane[Idx(i,k)]); }
 	void setFieldOnPlane(size_t w, Point3Dstruct *v){ plane[w].x = v->x; plane[w].y = v->y; plane[w].z = v->z; }
 	//
 	virtual int initialVirtualField(SimStruct *simp, MemoryManager *mem);
-	virtual Point3Dstruct *getField(unsigned int i, unsigned int j, unsigned int k);
+	virtual void getField(unsigned int i, unsigned int j, unsigned int k, Point3Dstruct *val);
 	virtual double getFieldx(unsigned int i, unsigned int j, unsigned int k);
 	virtual double getFieldy(unsigned int i, unsigned int j, unsigned int k);
 	virtual double getFieldz(unsigned int i, unsigned int j, unsigned int k);

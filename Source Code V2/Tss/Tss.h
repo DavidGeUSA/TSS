@@ -47,6 +47,7 @@ types for Time-Space-Synchronized FDTD algorithm
 #define TP_TSS_TIME_CLASS      "TSS.TIME.CLASS" //class name of time advancement class
 #define TP_TSS_STATISTIC_CLASS "TSS.STATISTICS.CLASS" //class name of statistics class
 
+#define TP_TSS_SCRNINV   "TSS.SCREEN_INTERVAL" //time steps before showing step info on the screen
 #define TP_TSS_RECINV    "TSS.REC_INTERVAL"    //time steps before saving fields to files
 #define TP_TSS_RECFILE   "TSS.REC_BASEFILE"    //forming field files: <BASEFILE>_<time step>.e and <BASEFILE>_<time step>.h
 #define TP_TSS_TIMEFILE  "TSS.TIMEMATRIXFILE"  //file name for saving time advance matrix
@@ -56,12 +57,14 @@ types for Time-Space-Synchronized FDTD algorithm
 #define TP_TSS_MAXTIME   "SIM.MAXTIMES"  //Maximum simulation time steps, counting from 0
 #define TP_TSS_STARTTIME "SIM.STARTTIME" //the time step number to start with
 
+//estimation settings
 #define TP_TSS_KMAX   "TSS.KMAX"
 #define TP_TSS_SMAX   "TSS.SMAX"
 #define TP_TSS_DS     "TSS.DS"
 #define TP_TSS_DT     "TSS.DT"
 #define TP_COURFACTOR "TSS.COURANT_FACTOR"  //factor for courant number between 0 and 1
 
+//materials
 #define TP_TSS_RHO     "TSS.RHO"
 #define TP_TSS_VAC     "TSS.IS_VACUUM"  //if it is true then TSS.EPS and TSS.MU are ignored, eps0 and mu0 are used
 #define TP_TSS_EPS     "TSS.EPS"
@@ -69,11 +72,13 @@ types for Time-Space-Synchronized FDTD algorithm
 #define TP_TSS_SIE     "TSS.SIGMA_E"
 #define TP_TSS_SIM     "TSS.SIGMA_M"
 
+//threads 
 #define TP_SIM_USETHREADS "SIM.USETHREADS"
 
 //it is 1/ks; i.e. if ks=1/1000 then put 1000 here
 #define TP_SPACE_FACTOR "TSS.SPACE_FACTOR"
 
+//computing domain
 #define TP_TSS_NX      "TSS.NX"
 #define TP_TSS_NY      "TSS.NY"
 #define TP_TSS_NZ      "TSS.NZ"
@@ -81,6 +86,7 @@ types for Time-Space-Synchronized FDTD algorithm
 #define TP_TSS_YMIN    "TSS.YMIN"
 #define TP_TSS_ZMIN    "TSS.ZMIN"
 
+//PML settings
 #define TP_PML_DISABLE "PML.DISABLE"
 #define TP_PML_THICK   "PML.THICK"
 #define TP_PML_ALPHA   "PML.ALPHA"
@@ -98,13 +104,21 @@ types for Time-Space-Synchronized FDTD algorithm
 //for smax=3 and above, it taskes a long time to calculate the matrix. it is better to calculate once and load it from file later.
 #define TP_TSS_MATRIXFILEDIR "TSS.MATRIXFILEFOLDER"
 
+//subfolder for generating data files
 #define TP_TSS_DATAFOLDER "TSS.DATAFOLDER"
+//true: generate statistics file after simulation
 #define TP_TSS_STATISTICS "TSS.MAKESTATISTICS"
+//true: divide divergence by field strength
+#define TP_RELATIVE_DIVERGENCE "RELATIVE.DIVERGENCE"
+//divide divergence by field strength only if the field strength is greater than the threshold
+#define TP_REL_DIVG_THRESHOLD "RELATIVE.DIVERGENCE.THRESHOLD" 
 
+//test case to be executed
 #define TP_TEST_CASE "SIM.TESTCASE"
 
 //It specifies an array delimited by “:”. Each array item is in a format of “I,j,k,Ex|Ey|Ez|Hx|Hy|Hz”, i.e. “20,11,23,Ez:42:13:21,Hy”, this example will generate 2 CSV files, each line of the CSV file contains two values, time in milliseconds and the specified field value.
 #define SIM_OUTPUT_CSV "SIM.OUTPUT.CSV"
+
 
 typedef enum
 {
@@ -145,15 +159,18 @@ typedef struct SimStruct{
 	double dt;  //time advance step size
 	double courantFactor; //factor for courant number, between 0 and 1
 	double spaceFactor;   //factor for space, multiply it to rho, eps, mu, sie and sim; defaut is 1
-	double xmin; double ymin; double zmin; //computation domain. nx*ds>=x>=xmin, ny*ds>=y>=ymin, nz*ds>=z>=zmin
+	double xmin; double ymin; double zmin;             //computation domain. nx*ds>=x>=xmin, ny*ds>=y>=ymin, nz*ds>=z>=zmin
 	unsigned int nx; unsigned int ny; unsigned int nz; //computation domain. 0...nx; 0...ny; 0...nz
-	unsigned int smax;       //>=1. half estimatin order. Estimation order = 2*smax
-	unsigned int kmax;       //>=0. estimation order = 2*(kmax+1)
+	unsigned int smax;          //>=1. half estimatin order. Estimation order = 2*smax
+	unsigned int kmax;          //>=0. estimation order = 2*(kmax+1)
 	unsigned int maxTimeSteps;  //maximum time steps
 	unsigned int startTimeStep; //the time step number to start with, if it is greater than 0 then the field data files for the time step are used as the initial fields
-	unsigned int saveInterval;//time steps before saving fields to files
-	unsigned int threads;     //threads to be used
-	PmlStruct pml;            //PML parameters
+	unsigned int saveInterval;  //time steps before saving fields to files
+	unsigned int showInterval;  //time steps before showing step info on the screen
+	unsigned int threads;       //threads to be used
+	PmlStruct pml;              //PML parameters
+	bool relativeDivergence;    //true: divide divergence by field strength
+	double relDivergThreshold;  //divide divergence by field strength only if the field strength is greater than the threshold
 }SimStruct;
 
 //space derivative estimation matrixes

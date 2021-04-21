@@ -12,6 +12,8 @@ time advancement estimation module with rotation symmetry, use multiple threads
 
 TimeTssRotateSymmetryZ::TimeTssRotateSymmetryZ()
 {
+	H = NULL;
+	E = NULL;
 	pool = NULL;
 	retH = 0; retE = 0;
 	workCount = 0;
@@ -58,15 +60,24 @@ void TimeTssRotateSymmetryZ::cleanup()
 		delete curl_OneH; curl_OneH = NULL;
 	}
 	removeThreads();
+	wk = NULL;
+	pNextE = NULL;
+	pNextH = NULL;
+	curlZH = NULL;
+	curlZE = NULL;
 	workCount = 0;
+}
+void TimeTssRotateSymmetryZ::onSettingSimParams()
+{
+	ic = pams->nx / 2;
+	cellCount = (ic + 1)*(pams->nz + 1);
 }
 int TimeTssRotateSymmetryZ::initFields(FieldsSetter* f0)
 {
-	int ret = TimeTssBase::initFields(f0);
-	if (ret == ERR_OK)
-	{
-		ret = vH.initialVirtualField(pams, _mem);
-	}
+	int ret = ERR_OK;// = TimeTssBase::initFields(f0);
+	puts("\r\nAllocating z-rotatione symmetry field memories...");
+	//
+	ret = vH.initialVirtualField(pams, _mem);
 	if (ret == ERR_OK)
 	{
 		ret = vE.initialVirtualField(pams, _mem);
@@ -78,13 +89,27 @@ int TimeTssRotateSymmetryZ::initFields(FieldsSetter* f0)
 		Point3Dstruct ef;
 		Point3Dstruct hf;
 		size_t w = 0;
-		ic = pams->nx / 2;
+		//
+		ef.x = 0;
+		ef.y = 0;
+		ef.z = 0;
+		hf.x = 0;
+		hf.y = 0;
+		hf.z = 0;
+		//
 		for (unsigned int i = 0; i <= ic; i++)
 		{
 			z = pams->zmin;
 			for (unsigned int k = 0; k <= pams->nz; k++)
 			{
-				f0->SetFields(x, 0, z, &ef, &hf);
+				if (f0 == NULL)
+				{
+
+				}
+				else
+				{
+					f0->SetFields(x, 0, z, &ef, &hf);
+				}
 				vE.setFieldOnPlane(w, &ef);
 				vH.setFieldOnPlane(w, &hf);
 				z += pams->ds;

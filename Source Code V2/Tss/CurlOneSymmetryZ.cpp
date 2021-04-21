@@ -16,6 +16,9 @@ CurlOneSymmetryZ::CurlOneSymmetryZ()
 	nx = ny = nz = 0;
 	Field = 0;
 	pNext = 0;
+	v0.x = 0;
+	v0.y = 0;
+	v0.z = 0;
 }
 
 
@@ -37,6 +40,8 @@ void CurlOneSymmetryZ::setSpaceRange(unsigned int nx0, unsigned int ny0, unsigne
 	i0 = 0;
 	i1 = nx;
 	//w0 = 0;
+	ic = nx / 2;
+	j = ic;
 }
 
 //
@@ -636,6 +641,7 @@ double CurlOneSymmetryZ::Divergence(RotateSymmetryField *f, unsigned int i0, uns
 	}
 	else
 		d += dzVz();
+	d = d / 12;
 	return d;
 }
 
@@ -657,10 +663,11 @@ int CurlOneSymmetryZ::_getNextCurlUseFastMethod(RotateSymmetryField *pCurrent, R
 inline void CurlOneSymmetryZ::calculateCurl()
 {
 	//w = w0;
+	j = ic;
 	for (i = i0; i <= i1; i++)
 	{
-		for (j = 0; j <= ny; j++)
-		{
+		//for (j = 0; j <= ny; j++)
+		//{
 			for (k = 0; k <= nz; k++)
 			{
 				if (i == 1)
@@ -1791,7 +1798,7 @@ inline void CurlOneSymmetryZ::calculateCurl()
 				//
 				//w++;
 			}
-		}
+		//}
 	}
 }
 

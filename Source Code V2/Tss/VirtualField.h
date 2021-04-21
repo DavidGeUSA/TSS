@@ -21,7 +21,7 @@ public:
 	~VirtualField();
 	//
 	virtual int initialVirtualField(SimStruct *simp, MemoryManager *mem){ pams = simp; _mem = mem; return 0; }
-	virtual Point3Dstruct *getField(unsigned int i, unsigned int j, unsigned int k)=0;
+	virtual void getField(unsigned int i, unsigned int j, unsigned int k, Point3Dstruct *val) = 0;
 	virtual double getFieldx(unsigned int i, unsigned int j, unsigned int k) = 0;
 	virtual double getFieldy(unsigned int i, unsigned int j, unsigned int k) = 0;
 	virtual double getFieldz(unsigned int i, unsigned int j, unsigned int k) = 0;

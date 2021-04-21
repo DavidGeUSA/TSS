@@ -44,7 +44,9 @@ private:
 	LoopWorkDividerSymmetryZ divider;
 	unsigned int workCount;
 	unsigned int workCountN1; //workCount-1
-
+protected:
+	virtual void cleanup();
+	virtual void onSettingSimParams();
 public:
 	TimeTssRotateSymmetryZ();
 	virtual ~TimeTssRotateSymmetryZ();
@@ -52,18 +54,19 @@ public:
 	//
 	virtual void startThreads();
 	virtual void removeThreads();
-	virtual void cleanup();
+	
 	virtual int initFields(FieldsSetter* f0);
 	virtual int GetFirstCurls();
 	virtual int GetNextCurls();
 	virtual int AdvanceOneStep();
 	//
-	virtual size_t spacePointCount(){ return (pams->nx / 2 + 1)*(pams->nz + 1); }
 	virtual Point3Dstruct *getRawMemoryE(){ return vE.getRawMemory(); }
 	virtual Point3Dstruct *getRawMemoryH(){ return vH.getRawMemory(); }
 	//
 	virtual RotateSymmetryField *GetFieldZrotateSymmetryH(){ return &vH; }
 	virtual RotateSymmetryField *GetFieldZrotateSymmetryE(){ return &vE; }
+	virtual DivergenceStatistic *CreateDefaultStatisticsMaker(){ DivergenceStatisticZRotateSymmetry *g = new DivergenceStatisticZRotateSymmetry(); return dynamic_cast<DivergenceStatisticZRotateSymmetry*>(g); }
+
 	//////////////////////////////////////////////////////////////////////
 	void apply1stCurlE(unsigned int th)
 	{
