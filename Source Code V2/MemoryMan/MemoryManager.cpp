@@ -167,7 +167,7 @@ int MemoryItem::ReadFileIntoMemoryItem(size_t *size)
 	fd = open(filename, O_RDONLY);
 	if (fd == -1)
 	{
-		ret = ERR_FILE_OPEN;
+		ret = ERR_MEM_OPEN_FILE;
 	}
 	else if (fstat(fd, &sb) == -1)           /* To obtain file size */
 	{
