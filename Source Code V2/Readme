@@ -1,7 +1,7 @@
  ##What is new
  04/20/2021
  Bug fix in PML coding.
- Added dipole source.
+ Added dipole source. https://github.com/DavidGeUSA/TSS/blob/master/reportOnDipoleSource.pdf
  Show field strength in statistics.
  
 This version of the FDTD code includes following major changes.
